@@ -5,6 +5,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
 import { startBookingExpiryJob } from './jobs/expirePendingBookings.js';
+import { flushBackgroundTasks } from './utils/background.js';
 
 const app = createApp();
 
@@ -17,8 +18,8 @@ const server = app.listen(env.PORT, () => {
 const stopExpiryJob = startBookingExpiryJob();
 
 /**
- * Stop accepting new connections, let in-flight requests finish, close the
- * database pool, then exit.
+ * Stop accepting new connections, let in-flight requests and queued emails
+ * finish, close the database pool, then exit.
  * Docker sends SIGTERM on `docker compose down`; Ctrl+C sends SIGINT.
  * @param {string} signal
  */
@@ -26,6 +27,7 @@ function shutdown(signal) {
   console.log(`${signal} received, shutting down...`);
   stopExpiryJob();
   server.close(async () => {
+    await flushBackgroundTasks();
     await prisma.$disconnect();
     process.exit(0);
   });
