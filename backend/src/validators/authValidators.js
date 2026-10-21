@@ -81,3 +81,11 @@ export const resetPasswordSchema = z.object({
     .max(200, 'This reset link is invalid'),
   password: newPasswordField,
 });
+
+export const verifyTwoFactorSchema = z.object({
+  twoFactorToken: z.string({ error: 'Login attempt is missing. Please log in again.' }).min(20),
+  code: z
+    .string({ error: 'Code is required' })
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code from the email'),
+});

@@ -67,3 +67,29 @@ export function passwordResetEmail({ name, resetUrl, ttlMinutes }) {
 
   return { subject, text, html };
 }
+
+/**
+ * @param {{ name: string, code: string, ttlMinutes: number }} params
+ */
+export function twoFactorCodeEmail({ name, code, ttlMinutes }) {
+  const subject = `Your CEMS login code: ${code}`;
+  const text = [
+    `Hi ${name},`,
+    '',
+    `Your login code is: ${code}`,
+    '',
+    `It expires in ${ttlMinutes} minutes. Never share this code with anyone.`,
+    "If you didn't just try to log in, change your password immediately.",
+  ].join('\n');
+
+  const html = layout(
+    'Your login code',
+    `<p>Hi ${escapeHtml(name)},</p>
+     <p>Enter this code to finish logging in:</p>
+     <p style="font-size:32px;letter-spacing:8px;font-weight:bold;margin:24px 0">${escapeHtml(code)}</p>
+     <p>It expires in ${ttlMinutes} minutes. Never share this code with anyone.</p>
+     <p style="color:#6b7280">If you didn't just try to log in, change your password immediately.</p>`,
+  );
+
+  return { subject, text, html };
+}

@@ -3,6 +3,7 @@
  */
 import * as authService from '../services/authService.js';
 import * as passwordResetService from '../services/passwordResetService.js';
+import * as twoFactorService from '../services/twoFactorService.js';
 import { toPublicUser } from '../utils/publicUser.js';
 import { sendCreated, sendSuccess } from '../utils/response.js';
 
@@ -17,6 +18,12 @@ export async function register(req, res) {
 export async function login(req, res) {
   const result = await authService.login(req.validated.body, contextOf(req));
   sendSuccess(res, result);
+}
+
+export async function verifyTwoFactor(req, res) {
+  const user = await twoFactorService.verifyLoginCode(req.validated.body, contextOf(req));
+  const session = await authService.startSession(user, contextOf(req));
+  sendSuccess(res, session);
 }
 
 export async function logout(req, res) {

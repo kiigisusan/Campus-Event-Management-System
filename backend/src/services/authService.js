@@ -9,6 +9,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { toPublicUser } from '../utils/publicUser.js';
 import { signAccessToken } from '../utils/tokens.js';
 import { recordAudit } from './auditService.js';
+import { requiresTwoFactor, sendLoginCode } from './twoFactorService.js';
 
 /**
  * Compared against when the email does not exist, so a login for an unknown
@@ -69,14 +70,19 @@ export async function register(input, { ipAddress } = {}) {
 }
 
 /**
- * Checks email and password and starts a session.
+ * Checks email and password.
+ *
+ * - Roles without 2FA get a session straight away:
+ *     { twoFactorRequired: false, token, user }
+ * - Roles in TWOFA_ROLES (admins) are emailed a code instead and must call
+ *   POST /auth/2fa/verify:
+ *     { twoFactorRequired: true, twoFactorToken, sentTo, expiresInMinutes }
  *
  * Wrong email and wrong password give the same error, so the response never
  * tells an attacker whether an email is registered.
  *
  * @param {{ email: string, password: string }} credentials
  * @param {RequestContext} context
- * @returns {Promise<{ token: string, user: object }>}
  */
 export async function login({ email, password }, { ipAddress } = {}) {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -105,7 +111,11 @@ export async function login({ email, password }, { ipAddress } = {}) {
     );
   }
 
-  return startSession(user, { ipAddress });
+  if (requiresTwoFactor(user)) {
+    return sendLoginCode(user, { ipAddress });
+  }
+
+  return { twoFactorRequired: false, ...(await startSession(user, { ipAddress })) };
 }
 
 /**
