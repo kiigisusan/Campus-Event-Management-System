@@ -4,12 +4,17 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
+import { startBookingExpiryJob } from './jobs/expirePendingBookings.js';
 
 const app = createApp();
 
 const server = app.listen(env.PORT, () => {
   console.log(`CEMS API listening on http://localhost:${env.PORT}/api/v1 (${env.NODE_ENV})`);
+  console.log(`M-Pesa mode: ${env.MPESA_MODE}`);
 });
+
+// Background job: release seats held by bookings that were never paid.
+const stopExpiryJob = startBookingExpiryJob();
 
 /**
  * Stop accepting new connections, let in-flight requests finish, close the
@@ -19,6 +24,7 @@ const server = app.listen(env.PORT, () => {
  */
 function shutdown(signal) {
   console.log(`${signal} received, shutting down...`);
+  stopExpiryJob();
   server.close(async () => {
     await prisma.$disconnect();
     process.exit(0);
