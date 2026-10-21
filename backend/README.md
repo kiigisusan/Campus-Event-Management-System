@@ -221,6 +221,37 @@ every seat change locks the event row first, so events are never overbooked; rep
 M-Pesa callbacks change nothing; unpaid holds are released by a job every minute; money
 arriving after a hold expired re-takes a free seat or is flagged `PAYMENT_REFUND_REQUIRED`.
 
+## QR tickets and check-in
+
+| Method & path            | Who                        | Body                       | Notes                                   |
+| ------------------------ | -------------------------- | -------------------------- | --------------------------------------- |
+| `GET /bookings/:id/qr`   | student (owner)            |                            | PNG image of the ticket, once confirmed |
+| `POST /check-in`         | organizer of the event, admin | `qr_code`, `event_id`   | Validates the scanned ticket and marks it used |
+
+**For the scanner page (Member 3)**: pass the text html5-qrcode reads straight into `qr_code`
+(format `CEMS1:<token>`; the bare token also works for manual entry) and the `event_id` the
+scanner is open for. On success show `data.checkIn.student.name`. Errors to show:
+`ALREADY_CHECKED_IN` (`error.details.checked_in_at` says when), `NOT_PAID`, `TICKET_CANCELLED`,
+`WRONG_EVENT`, `INVALID_TICKET`, `NOT_YOUR_EVENT`. A ticket can only ever be checked in once,
+even if two scanners read it at the same moment.
+
+## Notification emails
+
+- **Booking confirmed** (free booking, or M-Pesa success): email with event details, the
+  receipt, and the QR ticket attached and shown inline. Automatic.
+- **Event cancelled**: call this from the event cancellation endpoint (**Member 1**), after the
+  event's status is set to `'cancelled'`:
+
+  ```js
+  import { notifyEventCancelled } from '../services/notificationService.js';
+
+  const notified = await notifyEventCancelled(eventId, { reason });
+  // emails every student with a pending or confirmed booking; returns how many
+  ```
+
+Emails are sent in the background and never slow down or fail the request. Set
+`EMAIL_NOTIFICATIONS=false` to switch them off.
+
 ## Email
 
 With `SMTP_HOST` empty (the default in development), emails are **not sent**: they are printed
