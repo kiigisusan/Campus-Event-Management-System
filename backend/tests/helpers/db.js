@@ -3,6 +3,7 @@
  */
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../src/config/prisma.js';
+import { flushBackgroundTasks } from '../../src/utils/background.js';
 
 /** True when a test database is configured; database suites are skipped otherwise. */
 export const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL);
@@ -12,8 +13,12 @@ export const describeDb = hasTestDatabase ? describe : describe.skip;
 
 export const TEST_PASSWORD = 'Password123!';
 
-/** Deletes all rows, children before parents so foreign keys are respected. */
+/**
+ * Deletes all rows, children before parents so foreign keys are respected.
+ * Waits for background emails first, so they never read half-deleted data.
+ */
 export async function resetDatabase() {
+  await flushBackgroundTasks();
   await prisma.auditLog.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.booking.deleteMany();
@@ -93,6 +98,12 @@ export async function createEvent(overrides = {}) {
       organizer_id,
     },
   });
+}
+
+/** For afterAll: let background work finish, then close the connection pool. */
+export async function closeDatabase() {
+  await flushBackgroundTasks();
+  await prisma.$disconnect();
 }
 
 export { prisma };

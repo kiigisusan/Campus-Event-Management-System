@@ -20,6 +20,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { hasEventStarted } from '../utils/eventTime.js';
 import { randomToken } from '../utils/tokens.js';
 import { recordAudit } from './auditService.js';
+import { queueBookingConfirmation } from './notificationService.js';
 
 /** Statuses that count as holding a seat. */
 export const ACTIVE_BOOKING_STATUSES = Object.freeze(['pending', 'confirmed', 'checked_in']);
@@ -108,7 +109,7 @@ export function presentBooking(booking) {
  * @returns {Promise<object>} the presented booking
  */
 export async function createBooking({ studentId, eventId }, { ipAddress } = {}) {
-  const bookingId = await prisma.$transaction(async (tx) => {
+  const { bookingId, status } = await prisma.$transaction(async (tx) => {
     if (!(await lockEvent(tx, eventId))) {
       throw ApiError.notFound('Event not found', 'EVENT_NOT_FOUND');
     }
@@ -169,8 +170,11 @@ export async function createBooking({ studentId, eventId }, { ipAddress } = {}) 
       { tx },
     );
 
-    return booking.booking_id;
+    return { bookingId: booking.booking_id, status: booking.status };
   }, BOOKING_TX_OPTIONS);
+
+  // Free events are confirmed now; paid ones are emailed when the payment succeeds.
+  if (status === 'confirmed') queueBookingConfirmation(bookingId);
 
   return getBookingById(bookingId);
 }

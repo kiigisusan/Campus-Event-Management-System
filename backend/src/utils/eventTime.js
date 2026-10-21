@@ -29,3 +29,12 @@ export function eventStartsAt({ event_date: date, event_time: time }) {
 
 /** True once the event's start time has passed. */
 export const hasEventStarted = (event, now = new Date()) => eventStartsAt(event) <= now;
+
+const dateTimeFormatter = new Intl.DateTimeFormat('en-KE', {
+  timeZone: 'Africa/Nairobi',
+  dateStyle: 'full',
+  timeStyle: 'short',
+});
+
+/** Human-readable start time for emails, e.g. "Thursday, 29 October 2026 at 14:00". */
+export const formatEventStart = (event) => dateTimeFormatter.format(eventStartsAt(event));

@@ -1,6 +1,13 @@
 import { expirePendingBookings } from '../src/jobs/expirePendingBookings.js';
 import { newQrToken } from '../src/services/bookingService.js';
-import { createEvent, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  closeDatabase,
+  createEvent,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60_000);
 
@@ -31,7 +38,7 @@ describeDb('booking expiry job', () => {
     await resetDatabase();
     event = await createEvent({ capacity: 10, price: 500 });
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('cancels unpaid bookings whose hold has run out and releases the seat', async () => {
     const booking = await holdSeat({ status: 'pending', expires_at: minutesFromNow(-1) });

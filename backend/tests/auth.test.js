@@ -5,7 +5,14 @@ import { createApp } from '../src/app.js';
 import { authenticate, authorize } from '../src/middleware/authenticate.js';
 import { errorHandler } from '../src/middleware/errorHandler.js';
 import { signAccessToken } from '../src/utils/tokens.js';
-import { TEST_PASSWORD, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  TEST_PASSWORD,
+  closeDatabase,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 
@@ -34,7 +41,7 @@ function tokenIssuedSecondsAgo(user, secondsAgo, expiresInSeconds) {
 
 describeDb('auth', () => {
   beforeEach(() => resetDatabase());
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   describe('POST /auth/register', () => {
     it('creates a student, normalises the email and returns a session', async () => {

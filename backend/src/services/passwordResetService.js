@@ -15,6 +15,7 @@ import { prisma } from '../config/prisma.js';
 import { AUDIT_ACTIONS } from '../constants/auditActions.js';
 import { passwordResetEmail } from '../emails/templates.js';
 import { ApiError } from '../utils/ApiError.js';
+import { runInBackground } from '../utils/background.js';
 import { randomToken, sha256 } from '../utils/tokens.js';
 import { recordAudit } from './auditService.js';
 import { hashPassword } from './authService.js';
@@ -43,17 +44,17 @@ export async function requestPasswordReset(email, { ipAddress } = {}) {
 
   const resetUrl = `${env.CLIENT_URL}/reset-password?token=${encodeURIComponent(token)}`;
 
-  // Not awaited: waiting for the mail server here would make responses for
+  // In the background: waiting for the mail server here would make responses for
   // real accounts measurably slower than for unknown emails.
-  sendEmail({
-    to: user.email,
-    ...passwordResetEmail({
-      name: user.name,
-      resetUrl,
-      ttlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
+  runInBackground(`password reset email for user ${user.user_id}`, () =>
+    sendEmail({
+      to: user.email,
+      ...passwordResetEmail({
+        name: user.name,
+        resetUrl,
+        ttlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
+      }),
     }),
-  }).catch((error) =>
-    console.error(`Failed to send password reset email to user ${user.user_id}:`, error),
   );
 
   await recordAudit({

@@ -2,7 +2,14 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { clearOutbox, getOutbox } from '../src/services/emailService.js';
 import { signAccessToken } from '../src/utils/tokens.js';
-import { TEST_PASSWORD, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  TEST_PASSWORD,
+  closeDatabase,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 const NEW_PASSWORD = 'BrandNew123';
@@ -32,7 +39,7 @@ describeDb('password reset', () => {
     await resetDatabase();
     clearOutbox();
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('gives the same response for unknown emails and sends nothing', async () => {
     const user = await createUser();

@@ -5,7 +5,7 @@ import { audit } from '../src/middleware/audit.js';
 import { errorHandler } from '../src/middleware/errorHandler.js';
 import { recordAudit } from '../src/services/auditService.js';
 import { ApiError } from '../src/utils/ApiError.js';
-import { createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import { closeDatabase, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
 
 /** The middleware writes after the response is sent, so poll briefly for the row. */
 async function waitForAuditCount(expected, timeoutMs = 2000) {
@@ -46,7 +46,7 @@ describeDb('audit trail', () => {
     app.use(errorHandler);
   });
 
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('records user, action, target and details after a successful request', async () => {
     await request(app).post('/events/42/reject').send({ reason: 'Clashes with exams' }).expect(200);

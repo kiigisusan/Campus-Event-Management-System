@@ -2,6 +2,7 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { signAccessToken } from '../src/utils/tokens.js';
 import {
+  closeDatabase,
   createEvent,
   createUser,
   daysFromToday,
@@ -27,7 +28,7 @@ describeDb('bookings', () => {
     await resetDatabase();
     student = await createUser({ role: 'student' });
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   describe('POST /bookings', () => {
     it('confirms a free event immediately and takes one seat', async () => {

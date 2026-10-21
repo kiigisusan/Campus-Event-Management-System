@@ -3,7 +3,14 @@ import { createApp } from '../src/app.js';
 import { newQrToken } from '../src/services/bookingService.js';
 import { toQrPayload } from '../src/utils/qr.js';
 import { signAccessToken } from '../src/utils/tokens.js';
-import { createEvent, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  closeDatabase,
+  createEvent,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 const asUser = (user) => ({ Authorization: `Bearer ${signAccessToken(user)}` });
@@ -31,7 +38,7 @@ describeDb('QR tickets and check-in', () => {
     student = await createUser({ role: 'student', student_id_number: `S${Date.now()}` });
     event = await createEvent({ organizer_id: organizer.user_id });
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('checks a student in and shows who it was', async () => {
     const booking = await createBooking();

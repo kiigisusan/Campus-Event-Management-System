@@ -55,6 +55,11 @@ const envSchema = z
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
     EMAIL_FROM: z.string().default('CEMS <no-reply@cems.local>'),
+    // Booking confirmations and event-cancelled notices. Turned off in most tests for speed.
+    EMAIL_NOTIFICATIONS: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
 
     // --- Bookings -------------------------------------------------------------
     // How long a seat is held for an unpaid booking before it is released.

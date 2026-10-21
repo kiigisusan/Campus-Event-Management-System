@@ -26,6 +26,7 @@ import { hasEventStarted } from '../utils/eventTime.js';
 import { recordAudit } from './auditService.js';
 import { BOOKING_TX_OPTIONS, getBookingById, lockEvent, newQrToken } from './bookingService.js';
 import * as daraja from './mpesa/darajaClient.js';
+import { queueBookingConfirmation } from './notificationService.js';
 
 /**
  * A 'pending' attempt older than this may be replaced by a new prompt.
@@ -221,7 +222,7 @@ export async function applyPaymentResult(checkoutRequestId, result) {
     return { outcome: 'unknown' };
   }
 
-  return prisma.$transaction(async (tx) => {
+  const applied = await prisma.$transaction(async (tx) => {
     // Same lock order as booking/cancel/expiry: event row first.
     await lockEvent(tx, payment.booking.event_id);
     const current = await tx.payment.findUnique({
@@ -317,6 +318,9 @@ export async function applyPaymentResult(checkoutRequestId, result) {
 
     return { outcome, bookingId: booking.booking_id };
   }, BOOKING_TX_OPTIONS);
+
+  if (applied.outcome === 'confirmed') queueBookingConfirmation(applied.bookingId);
+  return applied;
 }
 
 /**

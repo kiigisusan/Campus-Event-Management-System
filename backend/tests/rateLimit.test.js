@@ -1,6 +1,12 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
-import { TEST_PASSWORD, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  TEST_PASSWORD,
+  closeDatabase,
+  createUser,
+  describeDb,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 
@@ -9,7 +15,7 @@ const login = (email, password) =>
 
 describeDb('login rate limiting', () => {
   beforeAll(() => resetDatabase());
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('blocks an account after 5 failed attempts from the same network', async () => {
     const user = await createUser();

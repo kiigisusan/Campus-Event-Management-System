@@ -1,7 +1,14 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { signAccessToken } from '../src/utils/tokens.js';
-import { createEvent, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  closeDatabase,
+  createEvent,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 const CALLBACK_PATH = `/api/v1/payments/mpesa/callback/${process.env.MPESA_CALLBACK_TOKEN}`;
@@ -61,7 +68,7 @@ describeDb('M-Pesa payments', () => {
     student = await createUser({ role: 'student' });
     event = await createEvent({ capacity: 5, price: 500 });
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('sends an STK push and stores the checkout request', async () => {
     const booking = await book();

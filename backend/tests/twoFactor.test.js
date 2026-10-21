@@ -3,7 +3,14 @@ import { createApp } from '../src/app.js';
 import { clearOutbox, getOutbox } from '../src/services/emailService.js';
 import { MAX_CODE_ATTEMPTS } from '../src/services/twoFactorService.js';
 import { signAccessToken } from '../src/utils/tokens.js';
-import { TEST_PASSWORD, createUser, describeDb, prisma, resetDatabase } from './helpers/db.js';
+import {
+  TEST_PASSWORD,
+  closeDatabase,
+  createUser,
+  describeDb,
+  prisma,
+  resetDatabase,
+} from './helpers/db.js';
 
 const app = createApp();
 
@@ -28,7 +35,7 @@ describeDb('two-factor authentication', () => {
     await resetDatabase();
     clearOutbox();
   });
-  afterAll(() => prisma.$disconnect());
+  afterAll(closeDatabase);
 
   it('admins get a code instead of a session, then a session after the code', async () => {
     const admin = await createUser({ role: 'admin' });

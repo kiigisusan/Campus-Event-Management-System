@@ -93,3 +93,97 @@ export function twoFactorCodeEmail({ name, code, ttlMinutes }) {
 
   return { subject, text, html };
 }
+
+const detailRow = (label, value) =>
+  `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">${escapeHtml(label)}</td><td style="padding:4px 0"><strong>${escapeHtml(value)}</strong></td></tr>`;
+
+/** Content-ID linking the attached QR PNG to the <img> in the confirmation email. */
+export const QR_IMAGE_CID = 'cems-ticket-qr';
+
+/**
+ * Booking confirmation with the QR ticket. The QR PNG must be attached by the
+ * caller with `cid: QR_IMAGE_CID` so it shows inside the email.
+ *
+ * @param {{ name: string, bookingId: number, eventTitle: string, startsAt: string,
+ *           venue: string, amountPaid?: number, mpesaReceipt?: string | null, ticketsUrl: string }} params
+ */
+export function bookingConfirmationEmail({
+  name,
+  bookingId,
+  eventTitle,
+  startsAt,
+  venue,
+  amountPaid,
+  mpesaReceipt,
+  ticketsUrl,
+}) {
+  const subject = `Booking confirmed: ${eventTitle}`;
+  const paidLine = amountPaid
+    ? `Paid: KES ${amountPaid}${mpesaReceipt ? ` (M-Pesa ${mpesaReceipt})` : ''}`
+    : 'Free event';
+
+  const text = [
+    `Hi ${name},`,
+    '',
+    `Your booking for "${eventTitle}" is confirmed.`,
+    '',
+    `When:    ${startsAt}`,
+    `Where:   ${venue}`,
+    `Booking: #${bookingId}`,
+    paidLine,
+    '',
+    'Show the attached QR code at the entrance. It can only be scanned once.',
+    `You can also open your ticket at any time: ${ticketsUrl}`,
+  ].join('\n');
+
+  const html = layout(
+    "You're booked!",
+    `<p>Hi ${escapeHtml(name)},</p>
+     <p>Your booking for <strong>${escapeHtml(eventTitle)}</strong> is confirmed.</p>
+     <table role="presentation" style="margin:16px 0;font-size:14px">
+       ${detailRow('When', startsAt)}
+       ${detailRow('Where', venue)}
+       ${detailRow('Booking', `#${bookingId}`)}
+       ${detailRow('Payment', paidLine)}
+     </table>
+     <p style="text-align:center;margin:24px 0">
+       <img src="cid:${QR_IMAGE_CID}" alt="Your ticket QR code" width="220" height="220" style="border:1px solid #e5e7eb;border-radius:8px">
+     </p>
+     <p>Show this QR code at the entrance. It can only be scanned once, so do not share it.</p>
+     ${button(ticketsUrl, 'View my bookings')}`,
+  );
+
+  return { subject, text, html };
+}
+
+/**
+ * @param {{ name: string, eventTitle: string, startsAt: string, reason?: string,
+ *           paid: boolean, organizerName?: string }} params
+ */
+export function eventCancelledEmail({ name, eventTitle, startsAt, reason, paid, organizerName }) {
+  const subject = `Event cancelled: ${eventTitle}`;
+  const refundLine = paid
+    ? 'You paid for this booking. The organizer will refund your M-Pesa payment.'
+    : '';
+
+  const text = [
+    `Hi ${name},`,
+    '',
+    `We're sorry: "${eventTitle}" (${startsAt}) has been cancelled${organizerName ? ` by ${organizerName}` : ''}.`,
+    ...(reason ? [`Reason: ${reason}`] : []),
+    ...(refundLine ? [refundLine] : []),
+    '',
+    'Your ticket for this event is no longer valid.',
+  ].join('\n');
+
+  const html = layout(
+    'Event cancelled',
+    `<p>Hi ${escapeHtml(name)},</p>
+     <p>We're sorry: <strong>${escapeHtml(eventTitle)}</strong> (${escapeHtml(startsAt)}) has been cancelled${organizerName ? ` by ${escapeHtml(organizerName)}` : ''}.</p>
+     ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ''}
+     ${refundLine ? `<p>${escapeHtml(refundLine)}</p>` : ''}
+     <p>Your ticket for this event is no longer valid.</p>`,
+  );
+
+  return { subject, text, html };
+}

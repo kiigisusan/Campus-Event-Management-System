@@ -12,7 +12,7 @@ import { env } from '../config/env.js';
 
 const OUTBOX_LIMIT = 50;
 
-/** @type {{ to: string, subject: string, text: string, html?: string }[]} */
+/** @type {{ to: string, subject: string, text: string, html?: string, attachments: string[] }[]} */
 const outbox = [];
 
 const usingSmtp = Boolean(env.SMTP_HOST);
@@ -41,7 +41,13 @@ export async function sendEmail({ to, subject, text, html, attachments }) {
   });
 
   if (!usingSmtp) {
-    outbox.push({ to, subject, text, html });
+    outbox.push({
+      to,
+      subject,
+      text,
+      html,
+      attachments: (attachments ?? []).map((a) => a.filename),
+    });
     if (outbox.length > OUTBOX_LIMIT) outbox.shift();
     if (!env.isTest) {
       console.log(`\n[email not sent - no SMTP_HOST] To: ${to}\nSubject: ${subject}\n\n${text}\n`);
