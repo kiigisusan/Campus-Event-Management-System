@@ -5,6 +5,7 @@
  * Keep the list grouped by owner so merges between branches stay simple.
  */
 import { Router } from 'express';
+import auditLogRoutes from './auditLogRoutes.js';
 import authRoutes from './authRoutes.js';
 import bookingRoutes from './bookingRoutes.js';
 import checkInRoutes from './checkInRoutes.js';
@@ -23,6 +24,7 @@ router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/check-in', checkInRoutes);
 router.use('/reports', reportRoutes);
+router.use('/audit-logs', auditLogRoutes);
 
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 
