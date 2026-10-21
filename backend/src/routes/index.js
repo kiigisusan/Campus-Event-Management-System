@@ -10,6 +10,7 @@ import bookingRoutes from './bookingRoutes.js';
 import checkInRoutes from './checkInRoutes.js';
 import healthRoutes from './healthRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
+import reportRoutes from './reportRoutes.js';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use('/auth', authRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/check-in', checkInRoutes);
+router.use('/reports', reportRoutes);
 
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 

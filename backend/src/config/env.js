@@ -22,6 +22,8 @@ const envSchema = z
     CLIENT_URL: z.url().default('http://localhost:5173'),
 
     APP_NAME: z.string().default('Campus Event Management System'),
+    // Optional PNG/JPEG logo for PDF reports; a built-in logo is drawn when unset.
+    REPORT_LOGO_PATH: z.string().optional(),
 
     // --- Auth ---------------------------------------------------------------
     // Signs every JWT. Long and random: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
