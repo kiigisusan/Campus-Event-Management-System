@@ -71,7 +71,8 @@ src/
 ├── config/           env.js (validated settings)
 ├── routes/           URL → middleware → controller wiring, one file per feature
 ├── controllers/      HTTP layer: read req.validated, call a service, send response
-├── services/         Business logic and database access
+├── services/         Business logic and database access (mpesa/ = Daraja client)
+├── jobs/             Background jobs (unpaid booking expiry)
 ├── middleware/       validate, errorHandler, notFound, authenticate/authorize, audit, rateLimiters
 ├── validators/       Zod schemas per feature (+ common.js)
 ├── utils/            ApiError, response helpers, tokens, publicUser
@@ -183,6 +184,42 @@ router.patch(
 - Hash passwords with `hashPassword()` from `services/authService.js`.
 - After changing a user's password or deactivating them, increment `token_version` so their
   existing sessions end.
+
+## Bookings and M-Pesa payments
+
+| Method & path                  | Who      | Body / query                 | Notes                                        |
+| ------------------------------ | -------- | ---------------------------- | -------------------------------------------- |
+| `POST /bookings`               | student  | `event_id`                   | Free: `confirmed`. Paid: `pending`, seat held for 10 min |
+| `POST /bookings/:id/pay`       | student  | `phone_number` (e.g. `0712345678`) | Sends the M-Pesa PIN prompt (202). Also used to retry |
+| `GET /bookings/:id`            | owner / admin |                         | Poll this while waiting for payment           |
+| `GET /bookings/me`             | student  | `?status=&page=&pageSize=`   | My Bookings page                              |
+| `PATCH /bookings/:id/cancel`   | student  |                              | Before the event starts; seat is released     |
+| `POST /payments/mpesa/callback/:token` | Safaricom |                   | Server-to-server, not called by the frontend  |
+
+**Paid booking flow for the frontend (Member 3)**
+
+1. `POST /bookings` → `booking.status === 'pending'`, show the countdown to `booking.expires_at`.
+2. Ask for the phone number → `POST /bookings/:id/pay`. Disable the Pay button while waiting.
+3. Poll `GET /bookings/:id` every 3 seconds:
+   - `status: 'confirmed'` → success page; `qr_code` is now set (render it / show the ticket).
+   - `payment.status: 'failed'` → show `payment.result_desc` and a **Retry** button (step 2 again).
+   - `status: 'cancelled'` (hold expired) → "Your reservation expired, please book again".
+4. Error codes to handle: `EVENT_FULL`, `ALREADY_BOOKED`, `PAYMENT_IN_PROGRESS`,
+   `BOOKING_EXPIRED`, `MPESA_UNAVAILABLE` (seat still held, retry).
+
+`qr_code` is `null` until a booking is confirmed, so an unpaid booking never has a ticket.
+
+**Mock mode** (`MPESA_MODE=mock`, the default) needs no Daraja keys. About 4 seconds after
+paying, the result is simulated from the phone number:
+`0700000000` → cancelled by user, `0711111111` → insufficient funds, anything else → success.
+
+**Sandbox mode**: set `MPESA_MODE=sandbox`, the Daraja keys, and a public HTTPS
+`MPESA_CALLBACK_BASE_URL` that Safaricom can reach (e.g. `ngrok http 4000`).
+
+**Guarantees** (see `services/bookingService.js` and `services/paymentService.js`):
+every seat change locks the event row first, so events are never overbooked; repeated
+M-Pesa callbacks change nothing; unpaid holds are released by a job every minute; money
+arriving after a hold expired re-takes a free seat or is flagged `PAYMENT_REFUND_REQUIRED`.
 
 ## Email
 
