@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
 import bookingRoutes from './bookingRoutes.js';
+import checkInRoutes from './checkInRoutes.js';
 import healthRoutes from './healthRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 
@@ -19,6 +20,7 @@ router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/check-in', checkInRoutes);
 
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 

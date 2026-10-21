@@ -3,6 +3,7 @@
  */
 import * as bookingService from '../services/bookingService.js';
 import { ApiError } from '../utils/ApiError.js';
+import { qrPngBuffer } from '../utils/qr.js';
 import { paginationMeta, sendCreated, sendSuccess } from '../utils/response.js';
 
 const contextOf = (req) => ({ ipAddress: req.ip });
@@ -49,4 +50,20 @@ export async function cancel(req, res) {
       ? 'Booking cancelled. The organizer will contact you about your M-Pesa refund.'
       : 'Booking cancelled.',
   });
+}
+
+/** GET /bookings/:id/qr - the ticket as a PNG image (owner only, once confirmed). */
+export async function qrImage(req, res) {
+  const booking = await bookingService.getBookingById(req.validated.params.id);
+  if (!booking || booking.student_id !== req.user.user_id) {
+    throw ApiError.notFound('Booking not found', 'BOOKING_NOT_FOUND');
+  }
+  if (!booking.qr_code) {
+    throw ApiError.conflict('Your ticket is available once the booking is confirmed', 'NO_TICKET');
+  }
+  res
+    .type('png')
+    .set('Cache-Control', 'private, no-store') // a ticket must not sit in shared caches
+    .set('Content-Disposition', `inline; filename="cems-ticket-${booking.booking_id}.png"`)
+    .send(await qrPngBuffer(booking.qr_code));
 }

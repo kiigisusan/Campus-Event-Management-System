@@ -32,6 +32,12 @@ router.get(
   validate({ params: idParamsSchema() }),
   bookingController.getById,
 );
+router.get(
+  '/:id/qr',
+  authorize('student'),
+  validate({ params: idParamsSchema() }),
+  bookingController.qrImage,
+);
 router.patch(
   '/:id/cancel',
   authorize('student'),
