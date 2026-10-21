@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment files (secrets) - only the *.example templates are committed
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+coverage/
+
+# Uploaded files (event images) are runtime data, not source
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/

@@ -1,0 +1,9 @@
+# Normalise line endings to LF in the repo. Shell scripts run inside Linux
+# containers and break with Windows CRLF endings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
