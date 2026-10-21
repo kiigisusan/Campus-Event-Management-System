@@ -44,4 +44,55 @@ export async function createUser(overrides = {}) {
   });
 }
 
+/** A DATE `days` from today (UTC midnight), as stored in events.event_date. */
+export function daysFromToday(days) {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date;
+}
+
+let eventCounter = 0;
+
+/**
+ * Creates an approved, free, future event (with its own category, venue and
+ * organizer unless given). Override anything, e.g. { price: 500, capacity: 1 }.
+ * @param {Partial<import('@prisma/client').Event>} overrides
+ */
+export async function createEvent(overrides = {}) {
+  eventCounter += 1;
+  const tag = `${eventCounter}-${Date.now()}`;
+  const capacity = overrides.capacity ?? 50;
+
+  const category_id =
+    overrides.category_id ??
+    (await prisma.category.create({ data: { name: `Category ${tag}` } })).category_id;
+  const venue_id =
+    overrides.venue_id ??
+    (
+      await prisma.venue.create({
+        data: { name: `Venue ${tag}`, location: 'Campus', capacity: 500 },
+      })
+    ).venue_id;
+  const organizer_id =
+    overrides.organizer_id ?? (await createUser({ role: 'organizer', org_name: 'Club' })).user_id;
+
+  return prisma.event.create({
+    data: {
+      title: `Event ${tag}`,
+      description: 'Test event',
+      event_date: daysFromToday(7),
+      event_time: new Date('1970-01-01T14:00:00.000Z'),
+      price: 0,
+      status: 'approved',
+      ...overrides,
+      capacity,
+      spots_remaining: overrides.spots_remaining ?? capacity,
+      category_id,
+      venue_id,
+      organizer_id,
+    },
+  });
+}
+
 export { prisma };

@@ -6,6 +6,7 @@
  */
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
+import bookingRoutes from './bookingRoutes.js';
 import healthRoutes from './healthRoutes.js';
 
 const router = Router();
@@ -15,6 +16,7 @@ router.use('/health', healthRoutes);
 
 // --- Member 2: auth, bookings, payments, check-in, reports, audit ---------
 router.use('/auth', authRoutes);
+router.use('/bookings', bookingRoutes);
 
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 

@@ -1,0 +1,40 @@
+/**
+ * /api/v1/bookings
+ */
+import { Router } from 'express';
+import * as bookingController from '../controllers/bookingController.js';
+import { authenticate, authorize } from '../middleware/authenticate.js';
+import { validate } from '../middleware/validate.js';
+import { createBookingSchema, listMyBookingsSchema } from '../validators/bookingValidators.js';
+import { idParamsSchema } from '../validators/common.js';
+
+const router = Router();
+
+router.use(authenticate);
+
+router.post(
+  '/',
+  authorize('student'),
+  validate({ body: createBookingSchema }),
+  bookingController.create,
+);
+router.get(
+  '/me',
+  authorize('student'),
+  validate({ query: listMyBookingsSchema }),
+  bookingController.listMine,
+);
+router.get(
+  '/:id',
+  authorize('student', 'admin'),
+  validate({ params: idParamsSchema() }),
+  bookingController.getById,
+);
+router.patch(
+  '/:id/cancel',
+  authorize('student'),
+  validate({ params: idParamsSchema() }),
+  bookingController.cancel,
+);
+
+export default router;
