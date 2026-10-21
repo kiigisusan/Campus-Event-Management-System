@@ -2,6 +2,7 @@
  * HTTP layer for /auth: reads validated input, calls authService, sends the response.
  */
 import * as authService from '../services/authService.js';
+import * as passwordResetService from '../services/passwordResetService.js';
 import { toPublicUser } from '../utils/publicUser.js';
 import { sendCreated, sendSuccess } from '../utils/response.js';
 
@@ -25,4 +26,17 @@ export async function logout(req, res) {
 
 export function me(req, res) {
   sendSuccess(res, { user: toPublicUser(req.user) });
+}
+
+export async function forgotPassword(req, res) {
+  await passwordResetService.requestPasswordReset(req.validated.body.email, contextOf(req));
+  // Same answer whether or not the account exists (see requestPasswordReset).
+  sendSuccess(res, {
+    message: 'If an account exists for that email, we have sent a link to reset the password.',
+  });
+}
+
+export async function resetPassword(req, res) {
+  await passwordResetService.resetPassword(req.validated.body, contextOf(req));
+  sendSuccess(res, { message: 'Your password has been changed. You can now log in.' });
 }

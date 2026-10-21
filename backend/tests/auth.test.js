@@ -52,14 +52,12 @@ describeDb('auth', () => {
     });
 
     it('requires an organisation name for organizers', async () => {
-      const res = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          name: 'Club',
-          email: 'club@example.com',
-          password: 'Secret123',
-          role: 'organizer',
-        });
+      const res = await request(app).post('/api/v1/auth/register').send({
+        name: 'Club',
+        email: 'club@example.com',
+        password: 'Secret123',
+        role: 'organizer',
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.error.details.map((d) => d.field)).toContain('org_name');

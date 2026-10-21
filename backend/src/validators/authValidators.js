@@ -68,3 +68,16 @@ export const loginSchema = z.object({
   // Only presence is checked at login: old passwords may predate the current rule.
   password: z.string({ error: 'Password is required' }).min(1, 'Password is required').max(200),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: emailField,
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string({ error: 'Reset token is required' })
+    .trim()
+    .min(20, 'This reset link is invalid')
+    .max(200, 'This reset link is invalid'),
+  password: newPasswordField,
+});
