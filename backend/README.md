@@ -72,9 +72,11 @@ src/
 ├── routes/           URL → middleware → controller wiring, one file per feature
 ├── controllers/      HTTP layer: read req.validated, call a service, send response
 ├── services/         Business logic and database access
-├── middleware/       validate, errorHandler, notFound (auth, roles, audit to come)
+├── middleware/       validate, errorHandler, notFound, authenticate/authorize, audit, rateLimiters
 ├── validators/       Zod schemas per feature (+ common.js)
-└── utils/            ApiError, response helpers
+├── utils/            ApiError, response helpers, tokens, publicUser
+├── emails/           Email templates
+└── constants/        AUDIT_ACTIONS
 tests/                Jest + Supertest
 ```
 
@@ -111,3 +113,90 @@ Read the parsed values from `req.validated.params / .query / .body` (Express 5 m
 `req.query` read-only, and the parsed values have the right types, e.g. numbers).
 
 **Pagination**: list endpoints accept `?page=&pageSize=` (`paginationSchema`, max 100 per page).
+
+## Authentication
+
+All under `/api/v1/auth`.
+
+| Method & path           | Body                                        | Notes                                    |
+| ----------------------- | ------------------------------------------- | ---------------------------------------- |
+| `POST /register`        | `name, email, password, role` + `student_id_number` (student) or `org_name` (organizer) | Students and organizers only. Returns `{ token, user }` |
+| `POST /login`           | `email, password`                           | See the two possible responses below     |
+| `POST /2fa/verify`      | `twoFactorToken, code`                      | Second login step for admins             |
+| `POST /logout`          | (auth)                                      | Ends every session of the user           |
+| `GET /me`               | (auth)                                      | The logged-in user                       |
+| `POST /forgot-password` | `email`                                     | Always 200; emails a reset link if the account exists |
+| `POST /reset-password`  | `token, password`                           | Token comes from the link `CLIENT_URL/reset-password?token=...` |
+
+**Login responses**
+
+```jsonc
+// students and organizers
+{ "success": true, "data": { "twoFactorRequired": false, "token": "...", "user": { ... } } }
+// admins: show a "enter the code we emailed" screen, then POST /auth/2fa/verify
+{ "success": true, "data": { "twoFactorRequired": true, "twoFactorToken": "...", "sentTo": "a***n@cems.test", "expiresInMinutes": 10 } }
+```
+
+**For the frontend (Member 3)**
+
+- Send the token on every request: `Authorization: Bearer <token>`.
+- If a response has an `X-Access-Token` header, replace the stored token with it. This is how
+  the 30-minute inactivity timeout works: active users keep getting fresh tokens.
+- On `401` with code `SESSION_EXPIRED`, `SESSION_REVOKED` or `INVALID_TOKEN`, clear the token
+  and redirect to the login page with the error message.
+- `429 TOO_MANY_REQUESTS` means rate limited (5 failed logins per account per 15 minutes).
+
+Axios example:
+
+```js
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+api.interceptors.response.use((response) => {
+  const renewed = response.headers['x-access-token'];
+  if (renewed) localStorage.setItem('token', renewed);
+  return response;
+});
+```
+
+**Protecting routes (Member 1)**
+
+```js
+import { authenticate, authorize } from '../middleware/authenticate.js';
+import { audit } from '../middleware/audit.js';
+import { AUDIT_ACTIONS } from '../constants/auditActions.js';
+
+router.patch(
+  '/:id/approve',
+  authenticate,                       // must be logged in -> req.user
+  authorize('admin'),                 // 'student' | 'organizer' | 'admin' | 'super_admin'
+  validate({ params: idParamsSchema() }),
+  audit(AUDIT_ACTIONS.APPROVE_EVENT, 'event'), // logged only if the request succeeds
+  controller.approve,
+);
+```
+
+- `authorize('admin')` also lets super admins in; `authorize('super_admin')` is super admins only.
+- Send users to the client with `toPublicUser(user)` from `utils/publicUser.js`, never raw rows.
+- Hash passwords with `hashPassword()` from `services/authService.js`.
+- After changing a user's password or deactivating them, increment `token_version` so their
+  existing sessions end.
+
+## Email
+
+With `SMTP_HOST` empty (the default in development), emails are **not sent**: they are printed
+in the backend terminal, including reset links and 2FA codes. Set the `SMTP_*` variables in
+`.env` to send real email.
+
+## Tests
+
+Database tests need a separate test database. Add to `backend/.env`:
+
+```
+TEST_DATABASE_URL=mysql://root:<root password>@localhost:3306/cems_test
+```
+
+The name must end in `_test`; the tests delete all its rows. Migrations are applied to it
+automatically when `npm test` starts. Without `TEST_DATABASE_URL`, database tests are skipped.
