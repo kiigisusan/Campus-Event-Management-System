@@ -9,6 +9,7 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { env } from './config/env.js';
+import { RENEWED_TOKEN_HEADER } from './middleware/authenticate.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import apiRoutes from './routes/index.js';
@@ -24,9 +25,9 @@ export function createApp() {
   // Security headers (CSP, X-Frame-Options, HSTS, no X-Powered-By, ...).
   app.use(helmet());
 
-  // Only the React app may call the API from a browser. `credentials` allows
-  // the auth cookie to be sent cross-origin during local development.
-  app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+  // Only the React app may call the API from a browser. The renewed session
+  // token header must be exposed or the browser hides it from JavaScript.
+  app.use(cors({ origin: env.CLIENT_URL, exposedHeaders: [RENEWED_TOKEN_HEADER] }));
 
   // Small body limit: the API only receives JSON forms (images use a separate upload route).
   app.use(express.json({ limit: '100kb' }));

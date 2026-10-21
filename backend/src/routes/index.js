@@ -5,6 +5,7 @@
  * Keep the list grouped by owner so merges between branches stay simple.
  */
 import { Router } from 'express';
+import authRoutes from './authRoutes.js';
 import healthRoutes from './healthRoutes.js';
 
 const router = Router();
@@ -13,6 +14,7 @@ const router = Router();
 router.use('/health', healthRoutes);
 
 // --- Member 2: auth, bookings, payments, check-in, reports, audit ---------
+router.use('/auth', authRoutes);
 
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 
