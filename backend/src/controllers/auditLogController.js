@@ -23,6 +23,16 @@ export function actions(_req, res) {
   sendSuccess(res, { actions: Object.values(AUDIT_ACTIONS).sort() });
 }
 
+/** { amount: 500, reason: 'Clash' } -> "amount: 500, reason: Clash" */
+const formatDetails = (details) =>
+  details
+    ? Object.entries(details)
+        .map(
+          ([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`,
+        )
+        .join(', ')
+    : '';
+
 const AUDIT_COLUMNS = [
   { label: 'Time (EAT)', value: (log) => formatEat(log.timestamp), width: 1.4 },
   { label: 'User', value: (log) => (log.user ? log.user.name : 'System'), width: 1.5 },
@@ -35,7 +45,7 @@ const AUDIT_COLUMNS = [
   },
   {
     label: 'Details',
-    value: (log) => (log.details ? JSON.stringify(log.details) : ''),
+    value: (log) => formatDetails(log.details),
     width: 2.8,
   },
   { label: 'IP address', value: (log) => log.ip_address, width: 1.1 },

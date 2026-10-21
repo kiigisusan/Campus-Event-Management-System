@@ -112,18 +112,35 @@ function scaleColumns(doc, columns) {
   return columns.map((column) => ({ ...column, px: (column.width / total) * available }));
 }
 
+/**
+ * Shortens text with "..." so it fits on one line in `width` points, using
+ * the current font. PDFKit's own ellipsis still wraps long words without
+ * spaces (ids, JSON), which would spill into the next row.
+ */
+function fitText(doc, text, width) {
+  if (doc.widthOfString(text) <= width) return text;
+  let end = text.length;
+  while (end > 0 && doc.widthOfString(`${text.slice(0, end)}...`) > width) end -= 1;
+  return `${text.slice(0, end)}...`;
+}
+
+/** Draws one table cell on a single line, truncated to fit. */
+function drawCell(doc, text, x, y, column) {
+  const width = column.px - 8;
+  doc.text(fitText(doc, text, width), x + 4, y, {
+    width,
+    align: column.align ?? 'left',
+    lineBreak: false,
+  });
+}
+
 function drawTableHeader(doc, columns, y) {
   let x = doc.page.margins.left;
   const width = columns.reduce((sum, column) => sum + column.px, 0);
   doc.rect(x, y, width, ROW_HEIGHT + 2).fill(COLORS.navy);
   doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#ffffff');
   for (const column of columns) {
-    doc.text(column.label, x + 4, y + 6, {
-      width: column.px - 8,
-      align: column.align ?? 'left',
-      lineBreak: false,
-      ellipsis: true,
-    });
+    drawCell(doc, column.label, x, y + 6, column);
     x += column.px;
   }
   return y + ROW_HEIGHT + 2;
@@ -138,12 +155,7 @@ function drawRow(doc, columns, row, y, shaded) {
   doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.text);
   for (const column of columns) {
     const value = column.value(row);
-    doc.text(value === null || value === undefined ? '-' : String(value), x + 4, y + 5, {
-      width: column.px - 8,
-      align: column.align ?? 'left',
-      lineBreak: false,
-      ellipsis: true,
-    });
+    drawCell(doc, value === null || value === undefined ? '-' : String(value), x, y + 5, column);
     x += column.px;
   }
 }
