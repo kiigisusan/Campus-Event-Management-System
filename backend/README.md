@@ -235,6 +235,40 @@ scanner is open for. On success show `data.checkIn.student.name`. Errors to show
 `WRONG_EVENT`, `INVALID_TICKET`, `NOT_YOUR_EVENT`. A ticket can only ever be checked in once,
 even if two scanners read it at the same moment.
 
+## Reports and audit log (admin only)
+
+| Method & path                       | Query filters                                               |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `GET /reports/attendance`           | `from, to, category_id, sort, order, group_by` (day/week/month) |
+| `GET /reports/categories`           | `from, to, category_id, sort, order`                        |
+| `GET /reports/organizers`           | `from, to, category_id, sort, order`                        |
+| `GET /reports/<type>/pdf`           | same filters; downloads the PDF                              |
+| `GET /audit-logs`                   | `from, to, user_id, action, target_type, search, order, page, pageSize` |
+| `GET /audit-logs/actions`           | list of action names for the filter dropdown                 |
+| `GET /audit-logs/pdf`               | same filters (no paging)                                     |
+
+- Dates are `YYYY-MM-DD`. Report dates filter on the **event date**; audit dates on when the
+  action happened (Kenyan time). `sort` values per report are listed in
+  `validators/reportValidators.js`; `order` is `asc` or `desc`.
+- Report JSON: `{ rows, totals }`, plus `trend` (for the attendance line chart) on the
+  attendance report. Categories rows include `share_of_bookings` for a pie chart.
+- Counting rules: bookings = confirmed or checked in; revenue = completed M-Pesa payments for
+  those bookings; only approved events count (the organizer report also shows pending,
+  rejected and cancelled counts).
+- **PDF download from the frontend (Member 3)**: the endpoint needs the Bearer token, so a plain
+  link will not work. Fetch it as a blob:
+
+  ```js
+  const res = await api.get('/reports/attendance/pdf', { params: filters, responseType: 'blob' });
+  const url = URL.createObjectURL(res.data);
+  Object.assign(document.createElement('a'), { href: url, download: 'attendance-report.pdf' }).click();
+  URL.revokeObjectURL(url);
+  ```
+
+- PDFs carry the logo, system name, title, generation date, the admin's name, the filters,
+  a summary and page numbers. Set `REPORT_LOGO_PATH` to a PNG to replace the built-in logo.
+  Every export is recorded in the audit log.
+
 ## Notification emails
 
 - **Booking confirmed** (free booking, or M-Pesa success): email with event details, the
