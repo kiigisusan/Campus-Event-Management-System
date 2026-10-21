@@ -28,18 +28,28 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 
 | Member                  | Branch  | Owns                                                                                |
 | ----------------------- | ------- | ----------------------------------------------------------------------------------- |
-| Member 1  Ida Ndege     | `Ida`   | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
+| Member 1: Ida Ndege     | `Ida`   | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
 | Member 2: Favor Vincent | `Favor` | Foundation, DB schema, auth & security, booking, M-Pesa, QR, reports, audit, emails |
-| Member 3  Susan Kiigi   | `Susan`   | Frontend: design system, student/organizer/admin pages                              |
+| Member 3: Susan Kiigi   | `Susan` | Frontend: design system, student/organizer/admin pages                              |
 
 ## Git workflow
 
-1. `main` holds stable, reviewed code only. Never commit to it directly.
-2. Each member works on their own branch, created from `main`.
-3. Commit small, focused changes with clear messages, e.g. `feat(auth): add login endpoint`.
-4. Before opening a pull request, merge the latest `main` into your branch and make sure
-   `npm run lint` and `npm test` pass.
-5. Open a pull request into `TestBranch`; at least one other member reviews it before it is merged.
+```
+your branch ──commit──► push ──merge──► TestBranch ──(all checks pass)──► main
+```
+
+| Branch          | Purpose                                                                           |
+| --------------- | --------------------------------------------------------------------------------- |
+| your own branch | Day-to-day work. Commit small, focused changes and push them here.                |
+| `TestBranch`    | Integration branch. Everyone's work is merged here and tested together.           |
+| `main`          | Stable, working code only. Updated from `TestBranch`, never committed to directly. |
+
+1. Work on your own branch and commit small, focused changes with clear messages,
+   e.g. `feat(auth): add login endpoint`.
+2. Push your branch, then merge it into `TestBranch` (open a pull request from your branch into `TestBranch`).
+   Pull the latest `TestBranch` into your branch first so conflicts are fixed on your side.
+3. On `TestBranch`, check that the app starts and `npm run lint` and `npm test` pass for the whole system.
+4. Once everything is working on `TestBranch`, merge `TestBranch` into `main`.
 
 Commit message prefixes: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
 
