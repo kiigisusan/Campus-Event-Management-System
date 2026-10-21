@@ -28,9 +28,9 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 
 | Member                  | Branch  | Owns                                                                                |
 | ----------------------- | ------- | ----------------------------------------------------------------------------------- |
-| Member 1 (_name_)       | _TBD_   | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
+| Member 1  Ida Ndege     | `Ida`   | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
 | Member 2: Favor Vincent | `Favor` | Foundation, DB schema, auth & security, booking, M-Pesa, QR, reports, audit, emails |
-| Member 3 (_name_)       | _TBD_   | Frontend: design system, student/organizer/admin pages                              |
+| Member 3  Susan Kiigi   | `Susan`   | Frontend: design system, student/organizer/admin pages                              |
 
 ## Git workflow
 
@@ -39,7 +39,7 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 3. Commit small, focused changes with clear messages, e.g. `feat(auth): add login endpoint`.
 4. Before opening a pull request, merge the latest `main` into your branch and make sure
    `npm run lint` and `npm test` pass.
-5. Open a pull request into `main`; at least one other member reviews it before it is merged.
+5. Open a pull request into `TestBranch`; at least one other member reviews it before it is merged.
 
 Commit message prefixes: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
 
