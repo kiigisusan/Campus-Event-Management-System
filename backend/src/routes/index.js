@@ -1,0 +1,19 @@
+/**
+ * API router: every feature router is mounted here under /api/v1.
+ *
+ * To add a feature, create `routes/<feature>Routes.js` and add one line below.
+ * Keep the list grouped by owner so merges between branches stay simple.
+ */
+import { Router } from 'express';
+import healthRoutes from './healthRoutes.js';
+
+const router = Router();
+
+// --- Platform -------------------------------------------------------------
+router.use('/health', healthRoutes);
+
+// --- Member 2: auth, bookings, payments, check-in, reports, audit ---------
+
+// --- Member 1: events, categories, venues, admin & organizer APIs ---------
+
+export default router;
