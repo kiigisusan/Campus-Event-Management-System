@@ -1,0 +1,79 @@
+# CEMS local stack.
+#
+#   cp .env.example .env                 # set the passwords
+#   docker compose up -d --build         # MySQL + migrations + API
+#   docker compose run --rm migrate npx prisma db seed   # optional demo data
+#
+# API: http://localhost:4000/api/v1/health
+
+name: cems
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: cems_db
+      # Read by docker/mysql/init/01-create-app-user.sh
+      MYSQL_APP_USER: ${MYSQL_APP_USER:-cems_app}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?set MYSQL_APP_PASSWORD in .env}
+      TZ: UTC
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # One-off job: applies pending Prisma migrations, then exits.
+  # It is the only service that gets the privileged database account.
+  migrate:
+    build: ./backend
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@db:3306/cems_db
+      MIGRATION_DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@db:3306/cems_db
+      NODE_ENV: development # lets `npx prisma db seed` run through this service
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      # SMTP, JWT and M-Pesa secrets live in backend/.env (optional for a first run).
+      - path: ./backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Runtime uses the least-privilege account only.
+      DATABASE_URL: mysql://${MYSQL_APP_USER:-cems_app}:${MYSQL_APP_PASSWORD}@db:3306/cems_db
+      MIGRATION_DATABASE_URL: ''
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+    ports:
+      - '${API_PORT:-4000}:4000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # The frontend service is added once the React app (Member 3) has a Dockerfile:
+  #
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - '${WEB_PORT:-8080}:80'
+  #   depends_on:
+  #     - backend
+
+volumes:
+  db_data:
