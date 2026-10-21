@@ -13,9 +13,15 @@
     "dev": "node --watch src/server.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write src tests",
-    "format:check": "prettier --check src tests",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
+    "format": "prettier --write src tests prisma/seed.js",
+    "format:check": "prettier --check src tests prisma/seed.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio"
   },
   "jest": {
     "testEnvironment": "node",
@@ -25,11 +31,14 @@
     ]
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
     "helmet": "^8.3.0",
     "morgan": "^1.12.1",
+    "prisma": "^6.19.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -40,5 +49,8 @@
     "jest": "^30.5.2",
     "prettier": "^3.9.10",
     "supertest": "^7.3.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

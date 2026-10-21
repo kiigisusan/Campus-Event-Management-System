@@ -3,6 +3,7 @@
  */
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { prisma } from './config/prisma.js';
 
 const app = createApp();
 
@@ -11,13 +12,17 @@ const server = app.listen(env.PORT, () => {
 });
 
 /**
- * Stop accepting new connections, let in-flight requests finish, then exit.
+ * Stop accepting new connections, let in-flight requests finish, close the
+ * database pool, then exit.
  * Docker sends SIGTERM on `docker compose down`; Ctrl+C sends SIGINT.
  * @param {string} signal
  */
 function shutdown(signal) {
   console.log(`${signal} received, shutting down...`);
-  server.close(() => process.exit(0));
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
   // Force exit if something keeps the server open for too long.
   setTimeout(() => process.exit(1), 10_000).unref();
 }

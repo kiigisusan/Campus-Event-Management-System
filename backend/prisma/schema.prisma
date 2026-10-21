@@ -1,0 +1,212 @@
+// Prisma schema for cems_db (MySQL 8, InnoDB, utf8mb4).
+//
+// Mirrors the 7-table 3NF schema from Deliverable 2. Column names stay in
+// snake_case so they match the schema document and raw report queries.
+// Columns marked "ADDED" were introduced during development to support
+// password reset, 2FA, M-Pesa callbacks and payment expiry.
+//
+// CHECK constraints are not expressible in Prisma, so they are added by hand
+// in the first migration (prisma/migrations/*_init/migration.sql).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "mysql"
+  // Runtime: least-privilege app user (SELECT, INSERT, UPDATE, DELETE only).
+  url       = env("DATABASE_URL")
+  // Migrations: a privileged user that may CREATE/ALTER tables.
+  directUrl = env("MIGRATION_DATABASE_URL")
+}
+
+enum Role {
+  student
+  organizer
+  admin
+}
+
+enum EventStatus {
+  draft // ADDED: organizer saved but has not submitted for approval
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum BookingStatus {
+  pending // seat held while an M-Pesa payment is awaited
+  confirmed
+  cancelled
+  checked_in
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
+
+/// Students, organizers and admins. Role-specific columns are NULL when not applicable.
+model User {
+  user_id           Int      @id @default(autoincrement())
+  name              String   @db.VarChar(100)
+  email             String   @unique @db.VarChar(150)
+  password_hash     String   @db.VarChar(255)
+  role              Role
+  student_id_number String?  @unique @db.VarChar(20) // students only
+  programme         String?  @db.VarChar(100) // students only
+  org_name          String?  @db.VarChar(150) // organizers only
+  verified          Boolean  @default(false) // organizers only
+  /// Admins only: 1 = admin, 2 = super admin (manages other admins).
+  access_level      Int?     @db.TinyInt
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now()) @db.DateTime(0)
+
+  // ADDED: password reset. Only a SHA-256 hash of the emailed token is stored.
+  password_reset_token_hash String?   @unique @db.Char(64)
+  password_reset_expires_at DateTime? @db.DateTime(0)
+
+  // ADDED: email 2FA for admins. Hash of the 6-digit code, its expiry and failed tries.
+  twofa_code_hash  String?   @db.VarChar(255)
+  twofa_expires_at DateTime? @db.DateTime(0)
+  twofa_attempts   Int       @default(0) @db.TinyInt
+
+  // ADDED: bumped on logout / password change / deactivation; every JWT carries the
+  // version it was issued with, so older tokens stop working immediately.
+  token_version Int @default(0)
+
+  events     Event[]    @relation("OrganizerEvents")
+  bookings   Booking[]
+  audit_logs AuditLog[]
+
+  @@index([role])
+  @@map("users")
+}
+
+/// Event types such as workshop, career fair and club night.
+model Category {
+  category_id Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(50)
+  description String? @db.VarChar(255)
+
+  events Event[]
+
+  @@map("categories")
+}
+
+/// Physical locations on campus. CHECK (capacity > 0) is in the migration.
+model Venue {
+  venue_id Int    @id @default(autoincrement())
+  name     String @db.VarChar(100)
+  location String @db.VarChar(255)
+  capacity Int
+
+  events Event[]
+
+  @@map("venues")
+}
+
+/// Created by organizers; visible to students only once approved.
+/// CHECKs in the migration: capacity > 0, 0 <= spots_remaining <= capacity, price >= 0.
+model Event {
+  event_id         Int         @id @default(autoincrement())
+  title            String      @db.VarChar(150)
+  description      String      @db.Text
+  event_date       DateTime    @db.Date
+  event_time       DateTime    @db.Time(0)
+  venue_id         Int
+  capacity         Int
+  spots_remaining  Int
+  price            Decimal     @default(0.00) @db.Decimal(10, 2)
+  category_id      Int
+  organizer_id     Int
+  status           EventStatus @default(pending)
+  rejection_reason String?     @db.VarChar(500) // ADDED: shown to the organizer
+  image_url        String?     @db.VarChar(500)
+  created_at       DateTime    @default(now()) @db.DateTime(0)
+  updated_at       DateTime    @updatedAt @db.DateTime(0)
+
+  // Restrict: a venue, category or organizer that still has events cannot be deleted.
+  venue     Venue     @relation(fields: [venue_id], references: [venue_id], onDelete: Restrict)
+  category  Category  @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
+  organizer User      @relation("OrganizerEvents", fields: [organizer_id], references: [user_id], onDelete: Restrict)
+  bookings  Booking[]
+
+  @@index([status, event_date])
+  @@index([category_id])
+  @@index([organizer_id])
+  @@index([venue_id])
+  @@map("events")
+}
+
+/// A student's reservation (the core transaction).
+/// UNIQUE (student_id, event_id): one booking row per student per event. A
+/// cancelled booking is re-activated if the student books again.
+model Booking {
+  booking_id    Int           @id @default(autoincrement())
+  student_id    Int
+  event_id      Int
+  booking_date  DateTime      @default(now()) @db.DateTime(0)
+  status        BookingStatus @default(confirmed)
+  /// Random, unguessable token encoded in the QR image.
+  qr_code       String        @unique @db.VarChar(255)
+  checked_in_at DateTime?     @db.DateTime(0)
+  /// ADDED: deadline for a pending (unpaid) booking; the expiry job releases the seat after it.
+  expires_at    DateTime?     @db.DateTime(0)
+  updated_at    DateTime      @updatedAt @db.DateTime(0)
+
+  student User     @relation(fields: [student_id], references: [user_id], onDelete: Restrict)
+  event   Event    @relation(fields: [event_id], references: [event_id], onDelete: Restrict)
+  payment Payment?
+
+  @@unique([student_id, event_id])
+  @@index([event_id, status])
+  @@index([student_id])
+  @@index([status, expires_at])
+  @@map("bookings")
+}
+
+/// M-Pesa payment for a paid event's booking (1:1). CHECK (amount > 0) is in the migration.
+model Payment {
+  payment_id          Int           @id @default(autoincrement())
+  booking_id          Int           @unique
+  amount              Decimal       @db.Decimal(10, 2)
+  mpesa_receipt       String?       @unique @db.VarChar(50)
+  phone_number        String        @db.VarChar(15) // format 2547XXXXXXXX
+  transaction_date    DateTime      @default(now()) @db.DateTime(0)
+  status              PaymentStatus @default(pending)
+  /// ADDED: Daraja ids. The callback is matched to the payment by checkout_request_id.
+  checkout_request_id String?       @unique @db.VarChar(100)
+  merchant_request_id String?       @db.VarChar(100)
+  /// ADDED: Daraja ResultCode / ResultDesc, kept for support and reports.
+  result_code         Int?
+  result_desc         String?       @db.VarChar(255)
+  updated_at          DateTime      @updatedAt @db.DateTime(0)
+
+  booking Booking @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+
+  @@index([status])
+  @@map("payments")
+}
+
+/// Audit trail of who did what, and when.
+model AuditLog {
+  log_id      Int      @id @default(autoincrement())
+  /// NULL for system actions (e.g. the payment-expiry job) and failed logins.
+  user_id     Int?
+  action      String   @db.VarChar(255) // e.g. APPROVE_EVENT
+  target_type String   @db.VarChar(50) // e.g. 'event', 'user', 'booking'
+  target_id   Int? // ADDED nullable: some actions (login) have no target row
+  details     Json? // ADDED: extra context, e.g. { reason: "..." }
+  ip_address  String?  @db.VarChar(45) // ADDED: IPv4 or IPv6
+  timestamp   DateTime @default(now()) @db.DateTime(0)
+
+  // SetNull keeps the audit history even if a user row is ever removed.
+  user User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+
+  @@index([user_id, timestamp])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
