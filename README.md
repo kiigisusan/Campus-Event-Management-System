@@ -21,8 +21,27 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 ├── backend/     Express REST API (routes → controllers → services → Prisma)
 ├── frontend/    React + Vite single-page app
 ├── docs/        Diagrams, schema notes, user manual
-└── docker-compose.yml   (added with the backend foundation)
+├── docker/      MySQL init script (creates the least-privilege app user)
+└── docker-compose.yml   MySQL + migrations + API in one command
 ```
+
+## Getting started (Docker)
+
+Requires Docker Desktop.
+
+```bash
+cp .env.example .env          # set the passwords (letters and digits only)
+docker compose up -d --build  # MySQL, then migrations, then the API
+docker compose run --rm migrate npx prisma db seed   # optional: demo data
+```
+
+- API health: http://localhost:4000/api/v1/health/ready
+- Stop: `docker compose down` (add `-v` to also delete the database volume)
+- If MySQL is already installed on your machine and using port 3306, set `DB_PORT=3307`
+  in `.env`.
+
+To work on the API with auto-reload instead, run only the database in Docker
+(`docker compose up -d db`) and follow [backend/README.md](backend/README.md).
 
 ## Team and ownership
 
