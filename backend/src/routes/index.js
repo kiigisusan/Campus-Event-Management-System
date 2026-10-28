@@ -9,11 +9,13 @@ import adminEventRoutes from './adminEventRoutes.js';
 import auditLogRoutes from './auditLogRoutes.js';
 import authRoutes from './authRoutes.js';
 import bookingRoutes from './bookingRoutes.js';
+import categoryRoutes from './categoryRoutes.js';
 import checkInRoutes from './checkInRoutes.js';
 import eventRoutes from './eventRoutes.js';
 import healthRoutes from './healthRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import reportRoutes from './reportRoutes.js';
+import venueRoutes from './venueRoutes.js';
 
 const router = Router();
 
@@ -31,5 +33,7 @@ router.use('/audit-logs', auditLogRoutes);
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 router.use('/events', eventRoutes);
 router.use('/admin/events', adminEventRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/venues', venueRoutes);
 
 export default router;
