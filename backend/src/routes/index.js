@@ -6,6 +6,7 @@
  */
 import { Router } from 'express';
 import adminEventRoutes from './adminEventRoutes.js';
+import adminUserRoutes from './adminUserRoutes.js';
 import auditLogRoutes from './auditLogRoutes.js';
 import authRoutes from './authRoutes.js';
 import bookingRoutes from './bookingRoutes.js';
@@ -33,6 +34,7 @@ router.use('/audit-logs', auditLogRoutes);
 // --- Member 1: events, categories, venues, admin & organizer APIs ---------
 router.use('/events', eventRoutes);
 router.use('/admin/events', adminEventRoutes);
+router.use('/admin/users', adminUserRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/venues', venueRoutes);
 
