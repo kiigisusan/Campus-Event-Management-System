@@ -8,7 +8,9 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
+import { openApiSpec } from './docs/openapi.js';
 import { RENEWED_TOKEN_HEADER } from './middleware/authenticate.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
@@ -21,6 +23,19 @@ export function createApp() {
   // client IP arrives in X-Forwarded-For. Trusting one hop lets rate limiting
   // and audit logs see the real IP instead of the proxy's.
   app.set('trust proxy', 1);
+
+  // API documentation. Mounted BEFORE helmet on purpose: helmet's strict
+  // Content-Security-Policy would block Swagger UI's own scripts and styles.
+  // The docs page serves no user data, so this is safe.
+  app.get('/api/docs.json', (_req, res) => res.json(openApiSpec));
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openApiSpec, {
+      customSiteTitle: 'CEMS API Docs',
+      swaggerOptions: { persistAuthorization: true },
+    }),
+  );
 
   // Security headers (CSP, X-Frame-Options, HSTS, no X-Powered-By, ...).
   app.use(helmet());
