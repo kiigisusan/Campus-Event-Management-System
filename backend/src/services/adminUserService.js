@@ -1,11 +1,13 @@
 /**
- * Admin user management: list, view, deactivate, activate, reset password.
+ * Admin user management: list, view, create, edit, change role,
+ * deactivate, activate and reset password.
  *
  * Rules:
  *  - An admin cannot act on their own account (no locking yourself out).
- *  - Only a super admin can act on other admins.
- *  - Deactivating or resetting a password bumps token_version, which ends
- *    every session the user has.
+ *  - Only a super admin can create admins or act on other admins.
+ *  - Deactivating, resetting a password or changing a role bumps token_version,
+ *    which ends every session the user has.
+ *  - A role cannot change once the user has bookings or events.
  */
 import crypto from 'node:crypto';
 import { prisma } from '../config/prisma.js';
@@ -47,6 +49,52 @@ function assertCanManage(actor, target) {
   }
 }
 
+async function assertEmailFree(email, exceptUserId) {
+  const existing = await prisma.user.findFirst({
+    where: { email, ...(exceptUserId ? { NOT: { user_id: exceptUserId } } : {}) },
+    select: { user_id: true },
+  });
+  if (existing) throw ApiError.conflict('An account with this email already exists', 'EMAIL_EXISTS');
+}
+
+async function assertStudentIdFree(studentIdNumber, exceptUserId) {
+  const existing = await prisma.user.findFirst({
+    where: {
+      student_id_number: studentIdNumber,
+      ...(exceptUserId ? { NOT: { user_id: exceptUserId } } : {}),
+    },
+    select: { user_id: true },
+  });
+  if (existing) {
+    throw ApiError.conflict('This student ID is already registered', 'STUDENT_ID_EXISTS');
+  }
+}
+
+/** The role-specific columns for a role; every column that does not apply is cleared. */
+function roleFields(data) {
+  const cleared = {
+    student_id_number: null,
+    programme: null,
+    org_name: null,
+    verified: false,
+    access_level: null,
+  };
+  switch (data.role) {
+    case 'student':
+      return {
+        ...cleared,
+        student_id_number: data.student_id_number,
+        programme: data.programme ?? null,
+      };
+    case 'organizer':
+      return { ...cleared, org_name: data.org_name, verified: data.verified ?? true };
+    default:
+      return { ...cleared, access_level: data.access_level ?? 1 };
+  }
+}
+
+// --- Reading --------------------------------------------------------------
+
 /** Searchable, filterable list of all users, newest first. */
 export async function listUsers({ page, pageSize, search, role, is_active: isActive }) {
   const where = {
@@ -81,6 +129,109 @@ export async function listUsers({ page, pageSize, search, role, is_active: isAct
 export async function getUser(userId) {
   return toPublicUser(await loadUser(userId));
 }
+
+// --- Creating and editing -------------------------------------------------
+
+/**
+ * Creates an account with a random temporary password, returned once.
+ * The new user should change it with "forgot password".
+ */
+export async function createUser({ actor, data }) {
+  if (data.role === 'admin' && !isSuperAdmin(actor)) {
+    throw ApiError.forbidden('Only a super admin can create admin accounts', 'SUPER_ADMIN_ONLY');
+  }
+  await assertEmailFree(data.email);
+  if (data.role === 'student') await assertStudentIdFree(data.student_id_number);
+
+  const temporaryPassword = generateTemporaryPassword();
+  const created = await prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      password_hash: await hashPassword(temporaryPassword),
+      ...roleFields(data),
+    },
+    select: USER_SAFE_SELECT,
+  });
+  return { user: toPublicUser(created), temporaryPassword };
+}
+
+const COMMON_FIELDS = ['name', 'email'];
+const FIELDS_BY_ROLE = {
+  student: ['student_id_number', 'programme'],
+  organizer: ['org_name', 'verified'],
+  admin: [],
+};
+
+/** Edits a user's details. Fields that do not suit the user's role are refused. */
+export async function updateUser({ actor, userId, data }) {
+  const target = await loadUser(userId);
+  assertCanManage(actor, target);
+
+  for (const key of Object.keys(data)) {
+    if (!COMMON_FIELDS.includes(key) && !FIELDS_BY_ROLE[target.role].includes(key)) {
+      throw ApiError.badRequest(
+        `"${key}" does not apply to a ${target.role}`,
+        undefined,
+        'FIELD_NOT_FOR_ROLE',
+      );
+    }
+  }
+  if (data.email !== undefined) await assertEmailFree(data.email, userId);
+  if (data.student_id_number !== undefined) {
+    await assertStudentIdFree(data.student_id_number, userId);
+  }
+
+  const updated = await prisma.user.update({
+    where: { user_id: userId },
+    data,
+    select: USER_SAFE_SELECT,
+  });
+  return toPublicUser(updated);
+}
+
+/**
+ * Changes a user's role. Only possible while the user has no bookings or
+ * events, so past records never end up under the wrong kind of user.
+ * @returns {Promise<{ user: object, previousRole: string }>}
+ */
+export async function changeUserRole({ actor, userId, data }) {
+  const target = await loadUser(userId);
+  assertCanManage(actor, target);
+
+  if (data.role === 'admin' && !isSuperAdmin(actor)) {
+    throw ApiError.forbidden('Only a super admin can create admin accounts', 'SUPER_ADMIN_ONLY');
+  }
+  if (data.role === target.role) {
+    throw ApiError.conflict(`This user is already a ${target.role}`, 'SAME_ROLE');
+  }
+
+  const [bookings, events] = await prisma.$transaction([
+    prisma.booking.count({ where: { student_id: userId } }),
+    prisma.event.count({ where: { organizer_id: userId } }),
+  ]);
+  if (bookings > 0 || events > 0) {
+    throw ApiError.conflict(
+      'This user already has bookings or events, so their role cannot change. Deactivate the account and create a new one instead.',
+      'ROLE_HAS_HISTORY',
+    );
+  }
+  if (data.role === 'student') await assertStudentIdFree(data.student_id_number, userId);
+
+  const updated = await prisma.user.update({
+    where: { user_id: userId },
+    data: {
+      role: data.role,
+      ...roleFields(data),
+      token_version: { increment: 1 }, // ends their sessions so the new role applies at once
+    },
+    select: USER_SAFE_SELECT,
+  });
+  return { user: toPublicUser(updated), previousRole: target.role };
+}
+
+// --- Account status and passwords -----------------------------------------
 
 /** Blocks (active = false) or allows (active = true) an account to log in. */
 export async function setUserActive({ actor, userId, active }) {
