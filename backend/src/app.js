@@ -10,11 +10,14 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
+import { withAdminUserDocs } from './docs/adminUserDocs.js';
 import { openApiSpec } from './docs/openapi.js';
 import { RENEWED_TOKEN_HEADER } from './middleware/authenticate.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import apiRoutes from './routes/index.js';
+
+const apiSpec = withAdminUserDocs(openApiSpec);
 
 export function createApp() {
   const app = express();
@@ -27,11 +30,11 @@ export function createApp() {
   // API documentation. Mounted BEFORE helmet on purpose: helmet's strict
   // Content-Security-Policy would block Swagger UI's own scripts and styles.
   // The docs page serves no user data, so this is safe.
-  app.get('/api/docs.json', (_req, res) => res.json(openApiSpec));
+  app.get('/api/docs.json', (_req, res) => res.json(apiSpec));
   app.use(
     '/api/docs',
     swaggerUi.serve,
-    swaggerUi.setup(openApiSpec, {
+    swaggerUi.setup(apiSpec, {
       customSiteTitle: 'CEMS API Docs',
       swaggerOptions: { persistAuthorization: true },
     }),
