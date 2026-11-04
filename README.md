@@ -20,7 +20,7 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 .
 ├── backend/     Express REST API (routes → controllers → services → Prisma)
 ├── frontend/    React + Vite single-page app
-├── docs/        Diagrams, schema notes, user manual
+├── docs/        Installation guide, user manual, architecture, database schema
 ├── docker/      MySQL init script (creates the least-privilege app user)
 └── docker-compose.yml   MySQL + migrations + API in one command
 ```
@@ -43,13 +43,17 @@ docker compose run --rm migrate npx prisma db seed   # optional: demo data
 To work on the API with auto-reload instead, run only the database in Docker
 (`docker compose up -d db`) and follow [backend/README.md](backend/README.md).
 
+Then start the frontend (`cd frontend`, `cp .env.example .env`, `npm install`, `npm run dev`) and
+open http://localhost:5173. The full walkthrough, demo accounts and troubleshooting are in the
+[installation guide](docs/installation-guide.md).
+
 ## Team and ownership
 
-| Member                  | Branch  | Owns                                                                                |
-| ----------------------- | ------- | ----------------------------------------------------------------------------------- |
-| Member 1: Ida Ndege     | `Ida`   | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
-| Member 2: Favor Vincent | `Favor` | Foundation, DB schema, auth & security, booking, M-Pesa, QR, reports, audit, emails |
-| Member 3: Susan Kiigi   | `Susan` | Frontend: design system, student/organizer/admin pages                              |
+| Member                  | Branch           | Owns                                                                                |
+| ----------------------- | ---------------- | ----------------------------------------------------------------------------------- |
+| Member 1: Ida Ndege     | `Ida`            | Events & admin APIs, categories/venues, Swagger, tests, deployment, docs           |
+| Member 2: Favor Vincent | `Favor`          | Foundation, DB schema, auth & security, booking, M-Pesa, QR, reports, audit, emails |
+| Member 3: Susan Kiigi   | `susan-frontend` | Frontend: design system, student/organizer/admin pages                              |
 
 ## Git workflow
 
@@ -68,6 +72,8 @@ your branch ──commit──► push ──merge──► TestBranch ──(al
 2. Push your branch, then merge it into `TestBranch` (open a pull request from your branch into `TestBranch`).
    Pull the latest `TestBranch` into your branch first so conflicts are fixed on your side.
 3. On `TestBranch`, check that the app starts and `npm run lint` and `npm test` pass for the whole system.
+   GitHub Actions runs these checks on every push and pull request (see the **Checks** tab on the
+   PR); don't merge while they are red.
 4. Once everything is working on `TestBranch`, merge `TestBranch` into `main`.
 
 Commit message prefixes: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.

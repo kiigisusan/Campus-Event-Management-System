@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import api, { FLASH_KEY, errorMessage, fieldErrors } from '../../lib/api';
+import { FLASH_KEY, errorMessage, fieldErrors } from '../../lib/api';
 import { email as emailRule, required, validate } from '../../lib/validate';
 import { useSubmit } from '../../lib/useAsync';
 import { homeFor, useAuth } from '../../context/AuthContext';
