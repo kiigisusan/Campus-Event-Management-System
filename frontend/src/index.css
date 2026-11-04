@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-ink-50 text-ink-900 antialiased;
+    color-scheme: dark;
+    background-image:
+      radial-gradient(900px 480px at 85% -10%, rgba(77,141,255,.22), transparent 60%),
+      radial-gradient(700px 420px at -5% 0%, rgba(139,92,246,.16), transparent 60%),
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: auto, auto, 36px 36px, 36px 36px;
+    background-attachment: fixed;
+  }
+  body { @apply font-sans text-[15px] leading-relaxed; }
+  h1, h2, h3, h4 { @apply font-display tracking-tight text-ink-900; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-jacaranda-600; }
+  ::selection { background: rgba(77,141,255,.4); color: #fff; }
+  input[type="date"], input[type="time"] { color-scheme: dark; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #1F2D4D; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: #050914; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-ink-100 bg-surface; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset; }
+  .stub-edge { background-image: radial-gradient(circle at 0 0, #050914 7px, transparent 7.5px), radial-gradient(circle at 0 100%, #050914 7px, transparent 7.5px); }
+
+  /* Moving aurora text: blue → violet → aqua */
+  .neon-text {
+    background-image: linear-gradient(100deg, #4D8DFF, #8B5CF6, #2DE2E6, #4D8DFF);
+    background-size: 250% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    animation: aurora 8s linear infinite;
+  }
+
+  /* Floating glow blobs behind the page */
+  .orb { position: absolute; border-radius: 9999px; filter: blur(90px); opacity: .35; animation: floaty 18s ease-in-out infinite; }
+  .orb-a { width: 380px; height: 380px; right: -80px; top: 18%; background: #4D8DFF; }
+  .orb-b { width: 320px; height: 320px; left: -100px; bottom: 8%; background: #8B5CF6; animation-delay: -9s; }
+}
+
+@keyframes aurora { to { background-position: 250% 0; } }
+@keyframes floaty { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-30px, 40px); } }
+
+/* Recharts on dark */
+.recharts-cartesian-axis-tick-value { fill: #9AA8C9; }
+.recharts-cartesian-grid line { stroke: #1F2D4D; }
+.recharts-legend-item-text { color: #CBD5EE !important; }
+.recharts-default-tooltip { background: #0F1930 !important; border: 1px solid #1F2D4D !important; border-radius: 10px; }
+.recharts-tooltip-cursor { fill: rgba(255,255,255,.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
