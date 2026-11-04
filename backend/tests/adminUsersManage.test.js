@@ -3,7 +3,6 @@ import { createApp } from '../src/app.js';
 import { newQrToken } from '../src/services/bookingService.js';
 import { signAccessToken } from '../src/utils/tokens.js';
 import {
-  TEST_PASSWORD,
   closeDatabase,
   createEvent,
   createUser,

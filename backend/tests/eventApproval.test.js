@@ -47,10 +47,7 @@ describeDb('Admin event approval', () => {
     const res = await request(app).get('/api/v1/admin/events').set(asUser(admin));
 
     expect(res.status).toBe(200);
-    expect(res.body.data.events.map((e) => e.event_id)).toEqual([
-      first.event_id,
-      second.event_id,
-    ]);
+    expect(res.body.data.events.map((e) => e.event_id)).toEqual([first.event_id, second.event_id]);
     expect(res.body.data.events[0].organizer).toMatchObject({ org_name: 'Club' });
   });
 
@@ -137,9 +134,7 @@ describeDb('Admin event approval', () => {
   });
 
   it('returns 404 for an event that does not exist', async () => {
-    const res = await request(app)
-      .patch('/api/v1/admin/events/999999/approve')
-      .set(asUser(admin));
+    const res = await request(app).patch('/api/v1/admin/events/999999/approve').set(asUser(admin));
 
     expect(res.status).toBe(404);
   });

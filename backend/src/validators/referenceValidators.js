@@ -29,4 +29,3 @@ export const updateVenueSchema = z
   .object(venueFields)
   .partial()
   .refine((body) => Object.keys(body).length > 0, atLeastOneField);
-  
