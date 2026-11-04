@@ -69,7 +69,7 @@ export default function Scanner() {
     }
   };
 
-  useEffect(() => () => { stop(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { stop(); }, []);
 
   const submitManual = (e) => {
     e.preventDefault();
