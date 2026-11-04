@@ -6,7 +6,7 @@ import { dateLong, money, timeShort } from '../../lib/format';
 import { useLoad, useSubmit } from '../../lib/useAsync';
 import { useToast } from '../../context/ToastContext';
 import {
-  Button, ConfirmModal, EmptyState, ErrorState, Modal, PageHeader, Pagination, Select, Spinner, StatusBadge, Table, Td, Textarea,
+  Button, EmptyState, ErrorState, Modal, PageHeader, Pagination, Select, Spinner, StatusBadge, Table, Td, Textarea,
 } from '../../components/ui';
 
 export default function OrganizerDashboard() {
