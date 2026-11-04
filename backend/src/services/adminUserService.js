@@ -54,7 +54,8 @@ async function assertEmailFree(email, exceptUserId) {
     where: { email, ...(exceptUserId ? { NOT: { user_id: exceptUserId } } : {}) },
     select: { user_id: true },
   });
-  if (existing) throw ApiError.conflict('An account with this email already exists', 'EMAIL_EXISTS');
+  if (existing)
+    throw ApiError.conflict('An account with this email already exists', 'EMAIL_EXISTS');
 }
 
 async function assertStudentIdFree(studentIdNumber, exceptUserId) {

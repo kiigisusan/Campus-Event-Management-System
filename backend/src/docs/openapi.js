@@ -19,7 +19,11 @@ const idParam = {
 
 const pagingParams = [
   { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
-  { name: 'pageSize', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+  {
+    name: 'pageSize',
+    in: 'query',
+    schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+  },
 ];
 
 const jsonBody = (schemaName, required = true) => ({
@@ -112,14 +116,32 @@ export const openApiSpec = {
         summary: 'List approved, upcoming events (public)',
         parameters: [
           ...pagingParams,
-          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Matches title or description' },
+          {
+            name: 'search',
+            in: 'query',
+            schema: { type: 'string' },
+            description: 'Matches title or description',
+          },
           { name: 'category_id', in: 'query', schema: { type: 'integer' } },
           { name: 'venue_id', in: 'query', schema: { type: 'integer' } },
-          { name: 'from', in: 'query', schema: { type: 'string', format: 'date' }, description: 'Default: today' },
+          {
+            name: 'from',
+            in: 'query',
+            schema: { type: 'string', format: 'date' },
+            description: 'Default: today',
+          },
           { name: 'to', in: 'query', schema: { type: 'string', format: 'date' } },
           { name: 'free', in: 'query', schema: { type: 'string', enum: ['true', 'false'] } },
-          { name: 'sort', in: 'query', schema: { type: 'string', enum: ['date', 'price', 'title'], default: 'date' } },
-          { name: 'order', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'], default: 'asc' } },
+          {
+            name: 'sort',
+            in: 'query',
+            schema: { type: 'string', enum: ['date', 'price', 'title'], default: 'date' },
+          },
+          {
+            name: 'order',
+            in: 'query',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
+          },
         ],
         responses: {
           200: success('Page of events', { events: { type: 'array', items: ref('Event') } }, true),
@@ -145,7 +167,14 @@ export const openApiSpec = {
         security: bearer,
         parameters: [
           ...pagingParams,
-          { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'] } },
+          {
+            name: 'status',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'],
+            },
+          },
         ],
         responses: {
           200: success('Page of events', { events: { type: 'array', items: ref('Event') } }, true),
@@ -192,7 +221,10 @@ export const openApiSpec = {
         security: bearer,
         parameters: [idParam],
         responses: {
-          200: success('Event is now pending', { event: ref('Event'), message: { type: 'string' } }),
+          200: success('Event is now pending', {
+            event: ref('Event'),
+            message: { type: 'string' },
+          }),
           404: errorRef(404),
           409: errorRef(409),
           ...standardErrors,
@@ -212,7 +244,9 @@ export const openApiSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                properties: { reason: { type: 'string', maxLength: 500, example: 'Speaker is unwell' } },
+                properties: {
+                  reason: { type: 'string', maxLength: 500, example: 'Speaker is unwell' },
+                },
               },
             },
           },
@@ -234,10 +268,22 @@ export const openApiSpec = {
         security: bearer,
         parameters: [
           ...pagingParams,
-          { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'], default: 'pending' } },
+          {
+            name: 'status',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'],
+              default: 'pending',
+            },
+          },
         ],
         responses: {
-          200: success('Page of events with organizer details', { events: { type: 'array', items: ref('Event') } }, true),
+          200: success(
+            'Page of events with organizer details',
+            { events: { type: 'array', items: ref('Event') } },
+            true,
+          ),
           ...standardErrors,
         },
       },
@@ -278,7 +324,9 @@ export const openApiSpec = {
       get: {
         tags: ['Categories'],
         summary: 'List all categories (public)',
-        responses: { 200: success('Categories', { categories: { type: 'array', items: ref('Category') } }) },
+        responses: {
+          200: success('Categories', { categories: { type: 'array', items: ref('Category') } }),
+        },
       },
       post: {
         tags: ['Categories'],
@@ -378,8 +426,17 @@ export const openApiSpec = {
         security: bearer,
         parameters: [
           ...pagingParams,
-          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Name, email, student ID or organisation' },
-          { name: 'role', in: 'query', schema: { type: 'string', enum: ['student', 'organizer', 'admin'] } },
+          {
+            name: 'search',
+            in: 'query',
+            schema: { type: 'string' },
+            description: 'Name, email, student ID or organisation',
+          },
+          {
+            name: 'role',
+            in: 'query',
+            schema: { type: 'string', enum: ['student', 'organizer', 'admin'] },
+          },
           { name: 'is_active', in: 'query', schema: { type: 'string', enum: ['true', 'false'] } },
         ],
         responses: {
@@ -493,24 +550,74 @@ export const openApiSpec = {
           price: { type: 'number', example: 0 },
           category_id: { type: 'integer' },
           organizer_id: { type: 'integer' },
-          status: { type: 'string', enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'] },
-          rejection_reason: { type: 'string', nullable: true, description: 'Only shown to the organizer and admins' },
+          status: {
+            type: 'string',
+            enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'],
+          },
+          rejection_reason: {
+            type: 'string',
+            nullable: true,
+            description: 'Only shown to the organizer and admins',
+          },
           image_url: { type: 'string', nullable: true },
-          venue: { type: 'object', properties: { venue_id: { type: 'integer' }, name: { type: 'string' }, location: { type: 'string' } } },
-          category: { type: 'object', properties: { category_id: { type: 'integer' }, name: { type: 'string' } } },
-          organizer: { type: 'object', properties: { user_id: { type: 'integer' }, name: { type: 'string' }, org_name: { type: 'string', nullable: true }, verified: { type: 'boolean' } } },
+          venue: {
+            type: 'object',
+            properties: {
+              venue_id: { type: 'integer' },
+              name: { type: 'string' },
+              location: { type: 'string' },
+            },
+          },
+          category: {
+            type: 'object',
+            properties: { category_id: { type: 'integer' }, name: { type: 'string' } },
+          },
+          organizer: {
+            type: 'object',
+            properties: {
+              user_id: { type: 'integer' },
+              name: { type: 'string' },
+              org_name: { type: 'string', nullable: true },
+              verified: { type: 'boolean' },
+            },
+          },
         },
       },
       EventInput: {
         type: 'object',
-        required: ['title', 'description', 'event_date', 'event_time', 'venue_id', 'capacity', 'category_id'],
+        required: [
+          'title',
+          'description',
+          'event_date',
+          'event_time',
+          'venue_id',
+          'capacity',
+          'category_id',
+        ],
         properties: {
-          title: { type: 'string', minLength: 3, maxLength: 150, example: 'Intro to Docker Workshop' },
-          description: { type: 'string', minLength: 10, example: 'Hands-on workshop on containers for beginners.' },
+          title: {
+            type: 'string',
+            minLength: 3,
+            maxLength: 150,
+            example: 'Intro to Docker Workshop',
+          },
+          description: {
+            type: 'string',
+            minLength: 10,
+            example: 'Hands-on workshop on containers for beginners.',
+          },
           event_date: { type: 'string', format: 'date', example: '2026-12-10' },
-          event_time: { type: 'string', example: '14:00', description: '24-hour HH:MM, Kenyan time' },
+          event_time: {
+            type: 'string',
+            example: '14:00',
+            description: '24-hour HH:MM, Kenyan time',
+          },
           venue_id: { type: 'integer', example: 1 },
-          capacity: { type: 'integer', example: 20, description: 'Cannot exceed the venue capacity' },
+          capacity: {
+            type: 'integer',
+            example: 20,
+            description: 'Cannot exceed the venue capacity',
+          },
           price: { type: 'number', example: 0, description: '0 = free' },
           category_id: { type: 'integer', example: 1 },
           image_url: { type: 'string', nullable: true },
@@ -534,7 +641,14 @@ export const openApiSpec = {
       RejectInput: {
         type: 'object',
         required: ['reason'],
-        properties: { reason: { type: 'string', minLength: 5, maxLength: 500, example: 'Please add a safety plan.' } },
+        properties: {
+          reason: {
+            type: 'string',
+            minLength: 5,
+            maxLength: 500,
+            example: 'Please add a safety plan.',
+          },
+        },
       },
       Category: {
         type: 'object',
@@ -601,12 +715,30 @@ export const openApiSpec = {
       },
     },
     responses: {
-      Error400: { description: 'Invalid input (VALIDATION_ERROR or a business rule)', content: { 'application/json': { schema: ref('ApiError') } } },
-      Error401: { description: 'Not logged in, or the session expired', content: { 'application/json': { schema: ref('ApiError') } } },
-      Error403: { description: 'Your role is not allowed to do this', content: { 'application/json': { schema: ref('ApiError') } } },
-      Error404: { description: 'Not found', content: { 'application/json': { schema: ref('ApiError') } } },
-      Error409: { description: 'Conflicts with the current state (for example EVENT_FULL, CATEGORY_IN_USE)', content: { 'application/json': { schema: ref('ApiError') } } },
-      Error429: { description: 'Too many requests', content: { 'application/json': { schema: ref('ApiError') } } },
+      Error400: {
+        description: 'Invalid input (VALIDATION_ERROR or a business rule)',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
+      Error401: {
+        description: 'Not logged in, or the session expired',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
+      Error403: {
+        description: 'Your role is not allowed to do this',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
+      Error404: {
+        description: 'Not found',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
+      Error409: {
+        description: 'Conflicts with the current state (for example EVENT_FULL, CATEGORY_IN_USE)',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
+      Error429: {
+        description: 'Too many requests',
+        content: { 'application/json': { schema: ref('ApiError') } },
+      },
     },
   },
 };

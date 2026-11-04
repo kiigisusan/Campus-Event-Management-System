@@ -61,9 +61,7 @@ describeDb('Admin user management', () => {
     it('filters by active status', async () => {
       await prisma.user.update({ where: { user_id: student.user_id }, data: { is_active: false } });
 
-      const res = await request(app)
-        .get('/api/v1/admin/users?is_active=false')
-        .set(asUser(admin));
+      const res = await request(app).get('/api/v1/admin/users?is_active=false').set(asUser(admin));
 
       expect(res.body.data.users.map((u) => u.user_id)).toEqual([student.user_id]);
     });

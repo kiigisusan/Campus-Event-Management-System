@@ -108,11 +108,20 @@ const newSchemas = {
       name: { type: 'string', example: 'Test Student' },
       email: { type: 'string', example: 'newstudent@cems.test' },
       role: { type: 'string', enum: ['student', 'organizer', 'admin'] },
-      student_id_number: { type: 'string', example: '200099', description: 'Required for students' },
+      student_id_number: {
+        type: 'string',
+        example: '200099',
+        description: 'Required for students',
+      },
       programme: { type: 'string', description: 'Students only (optional)' },
       org_name: { type: 'string', example: 'Drama Club', description: 'Required for organizers' },
       verified: { type: 'boolean', default: true, description: 'Organizers only' },
-      access_level: { type: 'integer', enum: [1, 2], default: 1, description: 'Admins only: 1 = admin, 2 = super admin' },
+      access_level: {
+        type: 'integer',
+        enum: [1, 2],
+        default: 1,
+        description: 'Admins only: 1 = admin, 2 = super admin',
+      },
     },
   },
   UpdateUserInput: {

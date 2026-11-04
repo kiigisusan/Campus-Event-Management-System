@@ -207,7 +207,10 @@ export async function updateEvent({ eventId, organizerId, data }) {
     if (data.event_date !== undefined) patch.event_date = toDbDate(data.event_date);
     if (data.event_time !== undefined) patch.event_time = toDbTime(data.event_time);
 
-    assertStartsInFuture(patch.event_date ?? event.event_date, patch.event_time ?? event.event_time);
+    assertStartsInFuture(
+      patch.event_date ?? event.event_date,
+      patch.event_time ?? event.event_time,
+    );
     if (data.category_id !== undefined) await assertCategoryExists(tx, data.category_id);
 
     const venue = await loadVenue(tx, patch.venue_id ?? event.venue_id);
