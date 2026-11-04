@@ -43,9 +43,10 @@ All use the password `Password123!`.
 | `admin@cems.test`      | Admin (access_level 1)   |
 | `organizer@cems.test`  | Organizer                |
 | `organizer2@cems.test` | Organizer                |
-| `student@cems.test`    | Student                  |
-| `student2@cems.test`   | Student                  |
-| `student3@cems.test`   | Student                  |
+| `organizer3@cems.test` | Organizer                |
+| `organizer4@cems.test` | Organizer (unverified)   |
+| `student@cems.test`, `student2@cems.test` … `student17@cems.test` | Student |
+| `student18@cems.test`  | Student (deactivated)    |
 
 ## Database
 
