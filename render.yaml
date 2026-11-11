@@ -1,0 +1,34 @@
+# Render Blueprint: deploys the CEMS API for free as a Docker web service.
+# The database is an external MySQL-compatible server (TiDB Cloud Starter) and the
+# web app is hosted on Vercel (frontend/vercel.json). See docs/deployment.md.
+#
+# Variables marked `sync: false` are asked for in the Render dashboard when the
+# Blueprint is created, so no secrets live in this file.
+
+services:
+  - type: web
+    name: cems-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    # Free instances have no pre-deploy step, so migrations run on every start.
+    # `migrate deploy` only applies pending migrations, so repeating it is harmless.
+    dockerCommand: sh -c "npx prisma migrate deploy && node src/server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL # mysql://USER:PASSWORD@HOST:4000/cems_db?sslaccept=strict
+        sync: false
+      - key: MIGRATION_DATABASE_URL # same value as DATABASE_URL on the free database
+        sync: false
+      - key: CLIENT_URL # the Vercel address, e.g. https://cems.vercel.app (no trailing slash)
+        sync: false
+      # TiDB does not support MySQL advisory locks, which Prisma migrate uses by default.
+      - key: PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK
+        value: '1'
+      - key: MPESA_MODE
+        value: mock
