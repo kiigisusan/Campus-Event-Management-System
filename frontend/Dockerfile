@@ -4,8 +4,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# The API address is baked into the bundle at build time.
-ARG VITE_API_URL=http://localhost:4000/api/v1
+# The API address is baked into the bundle at build time. A relative path means
+# "same host as the page"; nginx (see nginx.conf) forwards /api to the backend.
+ARG VITE_API_URL=/api/v1
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
