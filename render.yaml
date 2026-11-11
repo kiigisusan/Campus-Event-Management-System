@@ -10,6 +10,9 @@ services:
     name: cems-api
     runtime: docker
     plan: free
+    # Same region as the TiDB cluster (ap-southeast-1): every request makes several
+    # database round trips, so a nearby database matters more than a nearby API.
+    region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/v1/health
