@@ -18,7 +18,8 @@ services:
     healthCheckPath: /api/v1/health
     # Free instances have no pre-deploy step, so migrations run on every start.
     # `migrate deploy` only applies pending migrations, so repeating it is harmless.
-    dockerCommand: sh -c "npx prisma migrate deploy && node src/server.js"
+    # (A plain npm script: Render passes this command through without a shell, so `&&` would fail.)
+    dockerCommand: npm run start:migrate
     envVars:
       - key: NODE_ENV
         value: production
