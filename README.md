@@ -22,7 +22,7 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 ├── frontend/    React + Vite single-page app
 ├── docs/        Installation guide, user manual, architecture, database schema
 ├── docker/      MySQL init script (creates the least-privilege app user)
-└── docker-compose.yml   MySQL + migrations + API in one command
+└── docker-compose.yml   MySQL + migrations + API + web app in one command
 ```
 
 ## Getting started (Docker)
@@ -30,11 +30,12 @@ monitor activity. Paid events are paid through M-Pesa (Daraja STK Push).
 Requires Docker Desktop.
 
 ```bash
-cp .env.example .env          # set the passwords (letters and digits only)
-docker compose up -d --build  # MySQL, then migrations, then the API
+cp .env.example .env          # set the passwords (letters and digits only) and JWT_SECRET
+docker compose up -d --build  # MySQL, then migrations, then the API and the web app
 docker compose run --rm migrate npx prisma db seed   # optional: demo data
 ```
 
+- Web app: http://localhost:8080
 - API health: http://localhost:4000/api/v1/health/ready
 - Stop: `docker compose down` (add `-v` to also delete the database volume)
 - If MySQL is already installed on your machine and using port 3306, set `DB_PORT=3307`
@@ -43,8 +44,8 @@ docker compose run --rm migrate npx prisma db seed   # optional: demo data
 To work on the API with auto-reload instead, run only the database in Docker
 (`docker compose up -d db`) and follow [backend/README.md](backend/README.md).
 
-Then start the frontend (`cd frontend`, `cp .env.example .env`, `npm install`, `npm run dev`) and
-open http://localhost:5173. The full walkthrough, demo accounts and troubleshooting are in the
+For frontend development with hot reload, run `npm run dev` in `frontend/` (`cp .env.example .env`
+first) and open http://localhost:5173. The full walkthrough, demo accounts and troubleshooting are in the
 [installation guide](docs/installation-guide.md).
 
 ## Team and ownership

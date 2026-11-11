@@ -1,10 +1,11 @@
-# CEMS local stack.
+# CEMS full stack: MySQL + migrations + API + web app.
 #
-#   cp .env.example .env                 # set the passwords
-#   docker compose up -d --build         # MySQL + migrations + API
+#   cp .env.example .env                 # set the passwords and JWT_SECRET
+#   docker compose up -d --build
 #   docker compose run --rm migrate npx prisma db seed   # optional demo data
 #
-# API: http://localhost:4000/api/v1/health
+# Web app: http://localhost:8080
+# API:     http://localhost:4000/api/v1/health  (also at http://localhost:8080/api/v1/health)
 
 name: cems
 
@@ -59,21 +60,26 @@ services:
       # Runtime uses the least-privilege account only.
       DATABASE_URL: mysql://${MYSQL_APP_USER:-cems_app}:${MYSQL_APP_PASSWORD}@db:3306/cems_db
       MIGRATION_DATABASE_URL: ''
-      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      # Public address of the web app (used for CORS and links in emails).
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (32+ characters) in .env}
     ports:
       - '${API_PORT:-4000}:4000'
     depends_on:
       migrate:
         condition: service_completed_successfully
 
-  # The frontend service is added once the React app (Member 3) has a Dockerfile:
-  #
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - '${WEB_PORT:-8080}:80'
-  #   depends_on:
-  #     - backend
+  # React app served by nginx, which also forwards /api to the backend.
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - backend
 
 volumes:
   db_data:
