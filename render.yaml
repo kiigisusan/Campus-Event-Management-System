@@ -34,5 +34,31 @@ services:
       # TiDB does not support MySQL advisory locks, which Prisma migrate uses by default.
       - key: PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK
         value: '1'
+      # --- M-Pesa: Safaricom Daraja sandbox (test money, no real phone prompt) ---
       - key: MPESA_MODE
-        value: mock
+        value: sandbox
+      - key: MPESA_SHORTCODE
+        value: '174379' # Safaricom's public sandbox paybill
+      - key: MPESA_CONSUMER_KEY # from your app on developer.safaricom.co.ke
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY # the sandbox passkey on the Daraja "M-Pesa Express" simulator page
+        sync: false
+      - key: MPESA_CALLBACK_BASE_URL # this API's own public address, no trailing slash
+        sync: false
+      - key: MPESA_CALLBACK_TOKEN # random secret, 16+ characters; part of the callback URL
+        sync: false
+      # --- Email: Mailtrap sandbox over port 2525 (Render's free tier blocks 25/465/587) ---
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: '2525'
+      - key: SMTP_SECURE
+        value: 'false'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        value: CEMS <no-reply@cems.test>

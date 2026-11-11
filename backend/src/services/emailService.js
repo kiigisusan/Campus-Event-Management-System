@@ -23,6 +23,11 @@ const transporter = usingSmtp
       port: env.SMTP_PORT,
       secure: env.SMTP_SECURE,
       auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
+      // Nodemailer waits 2 minutes by default. The 2FA code is sent while the admin
+      // waits at the login screen, so a blocked or slow mail server must fail fast.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     })
   : nodemailer.createTransport({ jsonTransport: true });
 

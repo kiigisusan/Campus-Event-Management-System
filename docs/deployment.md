@@ -66,14 +66,41 @@ npx prisma db seed
 
 The demo accounts are listed in the [installation guide](installation-guide.md#5-log-in).
 
+## 6. Email and M-Pesa (sandbox)
+
+Both use test services, so nothing real is sent or charged. Set these on `cems-api` >
+Environment (the secret ones are never stored in the repo).
+
+**Email: Mailtrap Email Sandbox.** Mailtrap catches every email in a web inbox instead of
+delivering it. Render's free tier blocks the usual SMTP ports (25, 465, 587), so use port 2525.
+Open your inbox in Mailtrap, then **Integration > Nodemailer** shows the values:
+
+| Variable | Value |
+|---|---|
+| `SMTP_HOST` | the host Mailtrap shows (for example `sandbox.smtp.mailtrap.io`) |
+| `SMTP_PORT` | `2525` |
+| `SMTP_USER` / `SMTP_PASS` | the credentials Mailtrap shows |
+
+Booking confirmations, password-reset links and admin 2FA codes then appear in the Mailtrap inbox.
+
+**M-Pesa: Safaricom Daraja sandbox.** Create an app on https://developer.safaricom.co.ke and set:
+
+| Variable | Value |
+|---|---|
+| `MPESA_MODE` | `sandbox` |
+| `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET` | from your Daraja app |
+| `MPESA_SHORTCODE` | `174379` |
+| `MPESA_PASSKEY` | the passkey on the Daraja "M-Pesa Express" simulator page |
+| `MPESA_CALLBACK_BASE_URL` | the API address, for example `https://cems-api-5md3.onrender.com` (no trailing slash) |
+| `MPESA_CALLBACK_TOKEN` | any random string of 16+ letters and digits |
+
+Safaricom posts the payment result to `<MPESA_CALLBACK_BASE_URL>/api/v1/payments/mpesa/callback/<MPESA_CALLBACK_TOKEN>`.
+
 ## Limits of the free hosting
 
 - **Cold start.** Open the site a few minutes before presenting so the API is awake.
-- **Emails may not be sent.** Free Render instances are believed to block outbound email, so with
-  no SMTP configured the API prints emails to its log. Password-reset links and 2FA codes appear
-  under `cems-api` > **Logs**. Admin accounts use 2FA by default, so keep that tab open when
-  logging in as an admin.
-- **Payments are simulated.** `MPESA_MODE=mock`. Real M-Pesa needs the Safaricom sandbox keys
-  and the public API address as `MPESA_CALLBACK_BASE_URL`.
+- **Emails go to Mailtrap, not to real inboxes.** Delivering to real addresses needs a verified
+  sending domain.
+- **Sandbox payments use test money.** The Daraja sandbox does not send a real prompt to a phone.
 - **One database account.** The free database gives one user, so the API and migrations share it,
   unlike the local Docker setup, which uses a least-privilege app user.
